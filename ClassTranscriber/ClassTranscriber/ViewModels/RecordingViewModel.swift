@@ -11,36 +11,44 @@ class RecordingViewModel: ObservableObject {
     @Published var permissionsGranted: Bool = false
     @Published var toastMessage: ToastMessage?
     @Published var isExporting: Bool = false
+    @Published var isGeneratingNotes: Bool = false
+    @Published var isTranscribing: Bool = false
 
     let audioService = AudioRecordingService()
     let transcriptionService = TranscriptionService()
     private let driveService = GoogleDriveService.shared
+    private let geminiService = GeminiService.shared
 
     private var currentAudioURL: URL?
     private var cancellables = Set<AnyCancellable>()
+
+    @AppStorage("autoGenerateClassNotes") private var autoGenerateClassNotes = false
+    @AppStorage("realtimeTranscription") private var realtimeTranscription = true
 
     init() {
         setupBindings()
     }
 
     private func setupBindings() {
-        // Bind audio service duration to our published property
+        // Bind audio service duration to our published property (throttled to every 5 seconds)
         audioService.$currentDuration
+            .throttle(for: .seconds(5), scheduler: DispatchQueue.main, latest: true)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] duration in
                 self?.currentDuration = duration
             }
             .store(in: &cancellables)
 
-        // Bind transcription service text to our published property
+        // Bind transcription service text to our published property (throttled to every 5 seconds)
         transcriptionService.$transcribedText
+            .throttle(for: .seconds(5), scheduler: DispatchQueue.main, latest: true)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] text in
                 self?.transcribedText = text
             }
             .store(in: &cancellables)
 
-        // Bind transcription errors
+        // Bind transcription errors (not throttled - immediate feedback needed)
         transcriptionService.$error
             .receive(on: DispatchQueue.main)
             .sink { [weak self] error in
@@ -90,7 +98,11 @@ class RecordingViewModel: ObservableObject {
         }
 
         currentAudioURL = audioURL
-        transcriptionService.startTranscribing()
+
+        // Only start real-time transcription if enabled
+        if realtimeTranscription {
+            transcriptionService.startTranscribing()
+        }
 
         DispatchQueue.main.async {
             self.isRecording = true
@@ -100,7 +112,9 @@ class RecordingViewModel: ObservableObject {
 
     func pauseRecording() {
         audioService.pauseRecording()
-        transcriptionService.pauseTranscribing()
+        if realtimeTranscription {
+            transcriptionService.pauseTranscribing()
+        }
         DispatchQueue.main.async {
             self.isPaused = true
         }
@@ -108,16 +122,15 @@ class RecordingViewModel: ObservableObject {
 
     func resumeRecording() {
         audioService.resumeRecording()
-        transcriptionService.resumeTranscribing()
+        if realtimeTranscription {
+            transcriptionService.resumeTranscribing()
+        }
         DispatchQueue.main.async {
             self.isPaused = false
         }
     }
 
     func stopRecording(classModel: ClassModel, classViewModel: ClassViewModel) {
-        // Capture the transcribed text before stopping
-        let finalTranscript = transcribedText
-
         guard let result = audioService.stopRecording() else {
             DispatchQueue.main.async {
                 self.errorMessage = "Failed to stop recording"
@@ -125,24 +138,137 @@ class RecordingViewModel: ObservableObject {
             return
         }
 
-        transcriptionService.stopTranscribing()
+        if realtimeTranscription {
+            transcriptionService.stopTranscribing()
+        }
 
         let recordingDate = Date()
-        let recording = RecordingModel(
-            classId: classModel.id,
-            date: recordingDate,
-            duration: result.duration,
-            audioFileName: result.url.lastPathComponent,
-            transcriptText: finalTranscript,
-            name: RecordingModel.generateDefaultName(className: classModel.name, date: recordingDate)
+        let audioURL = result.url
+
+        // If post-recording transcription, transcribe the audio file now
+        if !realtimeTranscription {
+            DispatchQueue.main.async {
+                self.isTranscribing = true
+            }
+
+            transcriptionService.transcribeAudioFile(at: audioURL) { [weak self] transcriptionResult in
+                guard let self = self else { return }
+
+                DispatchQueue.main.async {
+                    self.isTranscribing = false
+                }
+
+                let finalTranscript: String
+                switch transcriptionResult {
+                case .success(let text):
+                    finalTranscript = text
+                case .failure(let error):
+                    DispatchQueue.main.async {
+                        self.errorMessage = "Transcription failed: \(error.localizedDescription)"
+                    }
+                    finalTranscript = ""
+                }
+
+                self.processRecording(
+                    classId: classModel.id,
+                    date: recordingDate,
+                    duration: result.duration,
+                    audioFileName: audioURL.lastPathComponent,
+                    transcript: finalTranscript,
+                    classModel: classModel,
+                    classViewModel: classViewModel
+                )
+            }
+        } else {
+            // Real-time transcription - use captured text
+            let finalTranscript = transcribedText
+            processRecording(
+                classId: classModel.id,
+                date: recordingDate,
+                duration: result.duration,
+                audioFileName: audioURL.lastPathComponent,
+                transcript: finalTranscript,
+                classModel: classModel,
+                classViewModel: classViewModel
+            )
+        }
+
+        reset()
+    }
+
+    private func processRecording(
+        classId: UUID,
+        date: Date,
+        duration: TimeInterval,
+        audioFileName: String,
+        transcript: String,
+        classModel: ClassModel,
+        classViewModel: ClassViewModel
+    ) {
+        var recording = RecordingModel(
+            classId: classId,
+            date: date,
+            duration: duration,
+            audioFileName: audioFileName,
+            transcriptText: transcript,
+            name: RecordingModel.generateDefaultName(className: classModel.name, date: date)
         )
 
         classViewModel.addRecording(recording)
 
-        // Export PDF based on class configuration
-        exportPDF(for: recording, classModel: classModel, classViewModel: classViewModel)
+        // Generate class notes if enabled
+        if autoGenerateClassNotes && !transcript.isEmpty {
+            Task {
+                await generateClassNotes(for: &recording, classModel: classModel, classViewModel: classViewModel)
+            }
+        } else {
+            // Export PDF immediately if notes generation is disabled
+            exportPDF(for: recording, classModel: classModel, classViewModel: classViewModel)
+        }
+    }
 
-        reset()
+    // MARK: - Class Notes Generation
+
+    private func generateClassNotes(for recording: inout RecordingModel, classModel: ClassModel, classViewModel: ClassViewModel) async {
+        await MainActor.run {
+            self.isGeneratingNotes = true
+        }
+
+        // Capture the transcript to avoid referencing inout parameter in concurrent code
+        let transcriptText = recording.transcriptText
+
+        do {
+            let classNotes = try await geminiService.generateClassNotes(from: transcriptText)
+
+            // Update recording with class notes
+            var updatedRecording = recording
+            updatedRecording.classNotes = classNotes
+            recording = updatedRecording
+
+            // Create a local copy for use in MainActor closure
+            let finalRecording = updatedRecording
+
+            await MainActor.run {
+                classViewModel.updateRecording(finalRecording)
+                self.isGeneratingNotes = false
+
+                // Export PDF with class notes
+                self.exportPDF(for: finalRecording, classModel: classModel, classViewModel: classViewModel)
+            }
+
+        } catch {
+            // Create a local copy for use in MainActor closure
+            let finalRecording = recording
+
+            // On error, show message but keep original transcript and export without notes
+            await MainActor.run {
+                self.isGeneratingNotes = false
+                self.errorMessage = error.localizedDescription
+
+                // Still export PDF with just the transcript
+                self.exportPDF(for: finalRecording, classModel: classModel, classViewModel: classViewModel)
+            }
+        }
     }
 
     func cancelRecording() {
@@ -161,12 +287,13 @@ class RecordingViewModel: ObservableObject {
             return
         }
 
-        // Generate PDF data
+        // Generate PDF data (with class notes if available)
         guard let pdfData = PDFExportService.generatePDF(
             className: classModel.name,
             date: recording.date,
             duration: recording.duration,
-            transcriptText: recording.transcriptText
+            transcriptText: recording.transcriptText,
+            classNotes: recording.classNotes
         ) else {
             DispatchQueue.main.async {
                 self.errorMessage = "Failed to generate PDF"

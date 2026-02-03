@@ -12,7 +12,8 @@ class PDFExportService {
         className: String,
         date: Date,
         duration: TimeInterval,
-        transcriptText: String
+        transcriptText: String,
+        classNotes: String? = nil
     ) -> Data? {
         let pageWidth: CGFloat = 612  // US Letter width in points
         let pageHeight: CGFloat = 792 // US Letter height in points
@@ -34,7 +35,7 @@ class PDFExportService {
 
         // Helper to begin a new page
         func beginPage() {
-            var box = mediaBox
+            let box = mediaBox
             context.beginPDFPage([kCGPDFContextMediaBox: NSValue(rect: box)] as CFDictionary)
         }
 
@@ -74,8 +75,9 @@ class PDFExportService {
         context.addLine(to: CGPoint(x: pageWidth - margin, y: separatorY))
         context.strokePath()
 
-        // Draw transcript text with pagination
+        // Prepare text attributes
         let bodyFont = CTFontCreateWithName("Helvetica" as CFString, 11, nil)
+        let sectionHeaderFont = CTFontCreateWithName("Helvetica-Bold" as CFString, 14, nil)
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.lineSpacing = 4
         paragraphStyle.paragraphSpacing = 8
@@ -86,13 +88,37 @@ class PDFExportService {
             .paragraphStyle: paragraphStyle
         ]
 
-        let transcriptString = NSAttributedString(string: transcriptText, attributes: bodyAttributes)
-        let framesetter = CTFramesetterCreateWithAttributedString(transcriptString)
+        let headerAttributes: [NSAttributedString.Key: Any] = [
+            .font: sectionHeaderFont,
+            .foregroundColor: cgColor(black: true)
+        ]
+
+        // Build the full content with class notes (if available) and transcript
+        let fullContent = NSMutableAttributedString()
+
+        // Add class notes section if available
+        if let classNotes = classNotes, !classNotes.isEmpty {
+            let notesHeader = NSAttributedString(string: "CLASS NOTES\n\n", attributes: headerAttributes)
+            fullContent.append(notesHeader)
+
+            let notesContent = NSAttributedString(string: classNotes + "\n\n\n", attributes: bodyAttributes)
+            fullContent.append(notesContent)
+
+            // Add separator before transcript
+            let transcriptHeader = NSAttributedString(string: "FULL TRANSCRIPTION\n\n", attributes: headerAttributes)
+            fullContent.append(transcriptHeader)
+        }
+
+        // Add transcript content
+        let transcriptContent = NSAttributedString(string: transcriptText, attributes: bodyAttributes)
+        fullContent.append(transcriptContent)
+
+        let framesetter = CTFramesetterCreateWithAttributedString(fullContent)
 
         var currentY = separatorY - 20
         let contentWidth = pageWidth - margin * 2
         var startIndex = 0
-        let textLength = transcriptString.length
+        let textLength = fullContent.length
         var isFirstPage = true
 
         while startIndex < textLength {

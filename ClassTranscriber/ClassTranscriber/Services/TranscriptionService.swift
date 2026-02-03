@@ -158,4 +158,30 @@ class TranscriptionService: ObservableObject {
             self.error = nil
         }
     }
+
+    // MARK: - Post-Recording Transcription
+
+    func transcribeAudioFile(at url: URL, completion: @escaping (Result<String, Error>) -> Void) {
+        guard let recognizer = speechRecognizer, recognizer.isAvailable else {
+            completion(.failure(NSError(domain: "TranscriptionService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Speech recognizer is not available"])))
+            return
+        }
+
+        let request = SFSpeechURLRecognitionRequest(url: url)
+        request.shouldReportPartialResults = false
+        if #available(macOS 13, iOS 16, *) {
+            request.addsPunctuation = true
+        }
+
+        recognizer.recognitionTask(with: request) { result, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+
+            if let result = result, result.isFinal {
+                completion(.success(result.bestTranscription.formattedString))
+            }
+        }
+    }
 }

@@ -27,6 +27,8 @@
 		A1000034207A0004 /* GoogleDriveService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000035207A0004 /* GoogleDriveService.swift */; };
 		A1000036207A0004 /* GoogleSignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000037207A0004 /* GoogleSignInView.swift */; };
 		A1000038207A0004 /* GoogleDriveFolderPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000039207A0004 /* GoogleDriveFolderPicker.swift */; };
+		A100003A207A0005 /* GeminiService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100003B207A0005 /* GeminiService.swift */; };
+		A100003C207A0005 /* KeychainHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100003D207A0005 /* KeychainHelper.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -53,6 +55,8 @@
 		A1000035207A0004 /* GoogleDriveService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleDriveService.swift; sourceTree = "<group>"; };
 		A1000037207A0004 /* GoogleSignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleSignInView.swift; sourceTree = "<group>"; };
 		A1000039207A0004 /* GoogleDriveFolderPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleDriveFolderPicker.swift; sourceTree = "<group>"; };
+		A100003B207A0005 /* GeminiService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeminiService.swift; sourceTree = "<group>"; };
+		A100003D207A0005 /* KeychainHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainHelper.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -82,10 +86,19 @@
 				A1000025207A0001 /* Services */,
 				A1000026207A0001 /* ViewModels */,
 				A1000027207A0001 /* Views */,
+				A100003E207A0005 /* Utils */,
 				A100001B207A0001 /* Info.plist */,
 				A100001C207A0001 /* ClassTranscriber.entitlements */,
 			);
 			path = ClassTranscriber;
+			sourceTree = "<group>";
+		};
+		A100003E207A0005 /* Utils */ = {
+			isa = PBXGroup;
+			children = (
+				A100003D207A0005 /* KeychainHelper.swift */,
+			);
+			path = Utils;
 			sourceTree = "<group>";
 		};
 		A1000023207A0001 /* Products */ = {
@@ -114,6 +127,7 @@
 				A100000E207A0001 /* PDFExportService.swift */,
 				A1000033207A0004 /* GoogleAuthService.swift */,
 				A1000035207A0004 /* GoogleDriveService.swift */,
+				A100003B207A0005 /* GeminiService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -220,6 +234,8 @@
 				A100001D207A0003 /* ToastView.swift in Sources */,
 				A1000036207A0004 /* GoogleSignInView.swift in Sources */,
 				A1000038207A0004 /* GoogleDriveFolderPicker.swift in Sources */,
+				A100003A207A0005 /* GeminiService.swift in Sources */,
+				A100003C207A0005 /* KeychainHelper.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

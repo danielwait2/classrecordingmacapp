@@ -8,6 +8,11 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var authService = GoogleAuthService.shared
 
+    @AppStorage("autoGenerateClassNotes") private var autoGenerateClassNotes = false
+    @AppStorage("realtimeTranscription") private var realtimeTranscription = true
+    @State private var geminiAPIKey: String = ""
+    @State private var showingAPIKeyAlert = false
+
     var body: some View {
         NavigationStack {
             Form {
@@ -16,6 +21,24 @@ struct SettingsView: View {
                     googleAccountContent
                 } header: {
                     Label("Google Account", systemImage: "person.circle")
+                }
+
+                // Recording Options Section
+                Section {
+                    recordingOptionsContent
+                } header: {
+                    Label("Recording Options", systemImage: "waveform")
+                } footer: {
+                    Text("Post-recording transcription saves battery by transcribing after you finish recording instead of in real-time.")
+                }
+
+                // AI Class Notes Section
+                Section {
+                    aiClassNotesContent
+                } header: {
+                    Label("AI Class Notes", systemImage: "brain")
+                } footer: {
+                    Text("Automatically generate comprehensive class notes from transcriptions using Gemini AI. Get your free API key at ai.google.dev")
                 }
 
                 // Class Save Locations Section
@@ -44,10 +67,80 @@ struct SettingsView: View {
                     }
                 }
             }
+            .onAppear {
+                loadGeminiAPIKey()
+            }
+            .alert("API Key Updated", isPresented: $showingAPIKeyAlert) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("Your Gemini API key has been securely saved.")
+            }
         }
         #if os(macOS)
         .frame(minWidth: 500, minHeight: 450)
         #endif
+    }
+
+    // MARK: - Recording Options Content
+
+    @ViewBuilder
+    private var recordingOptionsContent: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Toggle("Real-time transcription", isOn: $realtimeTranscription)
+
+            if !realtimeTranscription {
+                HStack(spacing: 8) {
+                    Image(systemName: "battery.100")
+                        .foregroundColor(.green)
+                        .font(.caption)
+                    Text("Battery saver mode - transcription happens after recording")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+        }
+    }
+
+    // MARK: - AI Class Notes Content
+
+    @ViewBuilder
+    private var aiClassNotesContent: some View {
+        // Auto-generate toggle
+        Toggle("Auto-generate class notes", isOn: $autoGenerateClassNotes)
+
+        // API Key input
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                SecureField("Gemini API Key", text: $geminiAPIKey)
+                    .textFieldStyle(.roundedBorder)
+                    #if os(iOS)
+                    .autocorrectionDisabled()
+                    .textInputAutocapitalization(.never)
+                    #endif
+
+                if !geminiAPIKey.isEmpty {
+                    Button("Save") {
+                        saveGeminiAPIKey()
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
+            }
+
+            if geminiAPIKey.isEmpty && KeychainHelper.shared.getGeminiAPIKey() != nil {
+                HStack(spacing: 4) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(.green)
+                        .font(.caption)
+                    Text("API key is saved")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+
+            Link("Get a free API key →", destination: URL(string: "https://ai.google.dev")!)
+                .font(.caption)
+        }
     }
 
     // MARK: - Google Account Content
@@ -130,6 +223,26 @@ struct SettingsView: View {
             .padding(.vertical, 20)
             Spacer()
         }
+    }
+
+    // MARK: - Helper Methods
+
+    private func loadGeminiAPIKey() {
+        // Don't show the actual key for security, just check if it exists
+        if KeychainHelper.shared.getGeminiAPIKey() != nil {
+            geminiAPIKey = ""
+        }
+    }
+
+    private func saveGeminiAPIKey() {
+        let trimmedKey = geminiAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmedKey.isEmpty {
+            _ = KeychainHelper.shared.deleteGeminiAPIKey()
+        } else {
+            _ = KeychainHelper.shared.saveGeminiAPIKey(trimmedKey)
+            showingAPIKeyAlert = true
+        }
+        geminiAPIKey = ""
     }
 }
 

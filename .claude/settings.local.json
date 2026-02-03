@@ -10,7 +10,8 @@
       "Bash(log show:*)",
       "Bash(tccutil reset:*)",
       "Bash(echo:*)",
-      "Bash(xcodebuild:*)"
+      "Bash(xcodebuild:*)",
+      "Bash(xcrun simctl:*)"
     ]
   }
 }

@@ -22,10 +22,43 @@ struct RecordingView: View {
             Spacer(minLength: 20)
         }
         .padding(.horizontal, 24)
+        .overlay {
+            if recordingViewModel.isTranscribing {
+                transcribingOverlay
+            }
+        }
         .alert("Permissions Required", isPresented: $showingPermissionAlert) {
             Button("OK", role: .cancel) { }
         } message: {
             Text("Please enable microphone and speech recognition permissions in System Settings.")
+        }
+    }
+
+    // MARK: - Transcribing Overlay
+
+    private var transcribingOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.4)
+                .ignoresSafeArea()
+
+            VStack(spacing: 16) {
+                ProgressView()
+                    .scaleEffect(1.5)
+                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+
+                Text("Transcribing recording...")
+                    .font(.headline)
+                    .foregroundColor(.white)
+
+                Text("This may take a moment")
+                    .font(.subheadline)
+                    .foregroundColor(.white.opacity(0.8))
+            }
+            .padding(32)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color(white: 0.15))
+            )
         }
     }
 
@@ -86,7 +119,7 @@ struct RecordingView: View {
                     .frame(width: 8, height: 8)
                     .modifier(PulsingModifier(isActive: !recordingViewModel.isPaused))
 
-                Text(recordingViewModel.isPaused ? "Paused" : "Live Transcription")
+                Text(recordingViewModel.isTranscribing ? "Transcribing..." : recordingViewModel.isPaused ? "Paused" : "Live Transcription")
                     .font(.subheadline.weight(.medium))
                     .foregroundColor(.secondary)
 
