@@ -125,6 +125,19 @@ struct RecordingView: View {
 
                 Spacer()
 
+                // Paste button for debugging
+                #if DEBUG
+                Button {
+                    pasteFromClipboard()
+                } label: {
+                    Image(systemName: "doc.on.clipboard")
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(.accentColor)
+                }
+                .buttonStyle(.plain)
+                .help("Paste text from clipboard (debug only)")
+                #endif
+
                 Text("\(wordCount) words")
                     .font(.caption)
                     .foregroundColor(.secondary)
@@ -407,6 +420,20 @@ struct RecordingView: View {
     }
 
     // MARK: - Methods
+
+    #if DEBUG
+    private func pasteFromClipboard() {
+        #if os(macOS)
+        if let clipboardString = NSPasteboard.general.string(forType: .string) {
+            recordingViewModel.transcribedText = clipboardString
+        }
+        #else
+        if let clipboardString = UIPasteboard.general.string {
+            recordingViewModel.transcribedText = clipboardString
+        }
+        #endif
+    }
+    #endif
 
     private func startRecordingWithPermissionCheck() {
         if recordingViewModel.permissionsGranted {

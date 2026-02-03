@@ -101,8 +101,10 @@ class PDFExportService {
             let notesHeader = NSAttributedString(string: "CLASS NOTES\n\n", attributes: headerAttributes)
             fullContent.append(notesHeader)
 
-            let notesContent = NSAttributedString(string: classNotes + "\n\n\n", attributes: bodyAttributes)
+            // Parse markdown formatting in class notes
+            let notesContent = MarkdownParser.parseMarkdown(classNotes, baseFont: bodyFont, baseColor: cgColor(black: true))
             fullContent.append(notesContent)
+            fullContent.append(NSAttributedString(string: "\n\n", attributes: bodyAttributes))
 
             // Add separator before transcript
             let transcriptHeader = NSAttributedString(string: "FULL TRANSCRIPTION\n\n", attributes: headerAttributes)

@@ -30,25 +30,23 @@ class RecordingViewModel: ObservableObject {
     }
 
     private func setupBindings() {
-        // Bind audio service duration to our published property (throttled to every 5 seconds)
+        // Bind audio service duration to our published property
         audioService.$currentDuration
-            .throttle(for: .seconds(5), scheduler: DispatchQueue.main, latest: true)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] duration in
                 self?.currentDuration = duration
             }
             .store(in: &cancellables)
 
-        // Bind transcription service text to our published property (throttled to every 5 seconds)
+        // Bind transcription service text to our published property
         transcriptionService.$transcribedText
-            .throttle(for: .seconds(5), scheduler: DispatchQueue.main, latest: true)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] text in
                 self?.transcribedText = text
             }
             .store(in: &cancellables)
 
-        // Bind transcription errors (not throttled - immediate feedback needed)
+        // Bind transcription errors
         transcriptionService.$error
             .receive(on: DispatchQueue.main)
             .sink { [weak self] error in
