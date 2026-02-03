@@ -10,13 +10,12 @@ struct ContentView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // Class selector
-                if !classViewModel.classes.isEmpty {
+                // Class selector - only show if no class is selected yet
+                if !classViewModel.classes.isEmpty && classViewModel.selectedClass == nil {
                     classSelector
                         .padding()
+                    Divider()
                 }
-
-                Divider()
 
                 // Recording view
                 RecordingView(recordingViewModel: recordingViewModel)

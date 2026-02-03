@@ -8,8 +8,9 @@ struct RecordingModel: Identifiable, Codable {
     let audioFileName: String
     var transcriptText: String
     var pdfExported: Bool
+    var name: String
 
-    init(id: UUID = UUID(), classId: UUID, date: Date = Date(), duration: TimeInterval = 0, audioFileName: String, transcriptText: String = "", pdfExported: Bool = false) {
+    init(id: UUID = UUID(), classId: UUID, date: Date = Date(), duration: TimeInterval = 0, audioFileName: String, transcriptText: String = "", pdfExported: Bool = false, name: String? = nil) {
         self.id = id
         self.classId = classId
         self.date = date
@@ -17,6 +18,27 @@ struct RecordingModel: Identifiable, Codable {
         self.audioFileName = audioFileName
         self.transcriptText = transcriptText
         self.pdfExported = pdfExported
+        // Default name will be set by the ViewModel with class name
+        self.name = name ?? Self.generateDefaultName(date: date)
+    }
+
+    /// Generates a default name from class name, date, and time
+    static func generateDefaultName(className: String? = nil, date: Date) -> String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "MMM d, yyyy"
+        let datePart = dateFormatter.string(from: date)
+
+        let timeFormatter = DateFormatter()
+        timeFormatter.dateFormat = "h:mma"
+        timeFormatter.amSymbol = "am"
+        timeFormatter.pmSymbol = "pm"
+        let timePart = timeFormatter.string(from: date)
+
+        if let className = className {
+            return "\(className), \(datePart), \(timePart)"
+        } else {
+            return "\(datePart), \(timePart)"
+        }
     }
 
     var formattedDate: String {

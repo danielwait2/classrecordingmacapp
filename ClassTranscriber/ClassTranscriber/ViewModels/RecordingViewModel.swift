@@ -125,12 +125,14 @@ class RecordingViewModel: ObservableObject {
 
         transcriptionService.stopTranscribing()
 
+        let recordingDate = Date()
         let recording = RecordingModel(
             classId: classModel.id,
-            date: Date(),
+            date: recordingDate,
             duration: result.duration,
             audioFileName: result.url.lastPathComponent,
-            transcriptText: finalTranscript
+            transcriptText: finalTranscript,
+            name: RecordingModel.generateDefaultName(className: classModel.name, date: recordingDate)
         )
 
         classViewModel.addRecording(recording)

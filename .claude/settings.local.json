@@ -9,7 +9,8 @@
       "Bash(open \"/Applications/iMessage Assistant.app\")",
       "Bash(log show:*)",
       "Bash(tccutil reset:*)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(xcodebuild:*)"
     ]
   }
 }

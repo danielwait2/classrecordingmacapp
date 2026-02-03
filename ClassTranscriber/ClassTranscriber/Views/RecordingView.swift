@@ -244,15 +244,36 @@ struct RecordingView: View {
                                     .foregroundColor(.white)
                             }
 
-                            // Class name below button
+                            // Class name below button - tappable to change class
                             if let selectedClass = classViewModel.selectedClass {
                                 VStack(spacing: 2) {
                                     Text("Tap to Record")
                                         .font(.caption)
                                         .foregroundColor(.secondary)
-                                    Text(selectedClass.name)
-                                        .font(.subheadline.bold())
+
+                                    Menu {
+                                        ForEach(classViewModel.classes) { classModel in
+                                            Button {
+                                                classViewModel.selectedClass = classModel
+                                            } label: {
+                                                HStack {
+                                                    Text(classModel.name)
+                                                    if classModel.id == selectedClass.id {
+                                                        Image(systemName: "checkmark")
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    } label: {
+                                        HStack(spacing: 4) {
+                                            Text(selectedClass.name)
+                                                .font(.subheadline.bold())
+                                            Image(systemName: "chevron.up.chevron.down")
+                                                .font(.caption2)
+                                        }
                                         .foregroundColor(.primary)
+                                    }
+                                    .menuStyle(.borderlessButton)
                                 }
                             } else {
                                 Text("Select a class to record")

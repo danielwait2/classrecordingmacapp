@@ -17,7 +17,7 @@ struct RecordingsListView: View {
             } else {
                 List {
                     ForEach(classViewModel.recordingsForSelectedClass()) { recording in
-                        RecordingRowView(recording: recording)
+                        RecordingRowView(recording: recording, classViewModel: classViewModel)
                     }
                     .onDelete(perform: deleteRecordings)
                 }
@@ -47,13 +47,16 @@ struct RecordingsListView: View {
 
 struct RecordingRowView: View {
     let recording: RecordingModel
-    @State private var showingTranscript = false
+    @ObservedObject var classViewModel: ClassViewModel
+    @State private var showingDetail = false
+    @State private var showingEditSheet = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Text(recording.formattedDate)
+                Text(recording.name)
                     .font(.headline)
+                    .lineLimit(1)
 
                 Spacer()
 
@@ -76,17 +79,49 @@ struct RecordingRowView: View {
         .padding(.vertical, 4)
         .contentShape(Rectangle())
         .onTapGesture {
-            showingTranscript = true
+            showingDetail = true
         }
-        .sheet(isPresented: $showingTranscript) {
-            TranscriptDetailView(recording: recording)
+        .contextMenu {
+            Button {
+                showingEditSheet = true
+            } label: {
+                Label("Edit", systemImage: "pencil")
+            }
+
+            Button(role: .destructive) {
+                classViewModel.deleteRecording(recording)
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+        }
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            Button(role: .destructive) {
+                classViewModel.deleteRecording(recording)
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+
+            Button {
+                showingEditSheet = true
+            } label: {
+                Label("Edit", systemImage: "pencil")
+            }
+            .tint(.blue)
+        }
+        .sheet(isPresented: $showingDetail) {
+            TranscriptDetailView(recording: recording, classViewModel: classViewModel)
+        }
+        .sheet(isPresented: $showingEditSheet) {
+            RecordingEditorView(recording: recording, classViewModel: classViewModel)
         }
     }
 }
 
 struct TranscriptDetailView: View {
     let recording: RecordingModel
+    @ObservedObject var classViewModel: ClassViewModel
     @Environment(\.dismiss) private var dismiss
+    @State private var showingEditSheet = false
 
     var body: some View {
         NavigationStack {
@@ -125,21 +160,116 @@ struct TranscriptDetailView: View {
                 }
                 .padding()
             }
-            .navigationTitle("Transcript")
+            .navigationTitle(recording.name)
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button {
+                        showingEditSheet = true
+                    } label: {
+                        Image(systemName: "pencil")
+                    }
+                }
+
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") {
                         dismiss()
                     }
                 }
             }
+            .sheet(isPresented: $showingEditSheet) {
+                RecordingEditorView(recording: recording, classViewModel: classViewModel)
+            }
         }
         #if os(macOS)
         .frame(minWidth: 500, minHeight: 400)
         #endif
+    }
+}
+
+struct RecordingEditorView: View {
+    let recording: RecordingModel
+    @ObservedObject var classViewModel: ClassViewModel
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var name: String = ""
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextField("Recording Name", text: $name)
+                } header: {
+                    Text("Name")
+                }
+
+                Section {
+                    HStack {
+                        Text("Date")
+                        Spacer()
+                        Text(recording.formattedDate)
+                            .foregroundColor(.secondary)
+                    }
+
+                    HStack {
+                        Text("Duration")
+                        Spacer()
+                        Text(recording.formattedDuration)
+                            .foregroundColor(.secondary)
+                    }
+
+                    HStack {
+                        Text("PDF Exported")
+                        Spacer()
+                        Image(systemName: recording.pdfExported ? "checkmark.circle.fill" : "xmark.circle")
+                            .foregroundColor(recording.pdfExported ? .green : .secondary)
+                    }
+                } header: {
+                    Text("Details")
+                }
+
+                Section {
+                    Text(recording.transcriptText.isEmpty ? "No transcript available" : String(recording.transcriptText.prefix(500)) + (recording.transcriptText.count > 500 ? "..." : ""))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                } header: {
+                    Text("Transcript Preview")
+                }
+            }
+            .navigationTitle("Edit Recording")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        saveChanges()
+                    }
+                    .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+            }
+            .onAppear {
+                name = recording.name
+            }
+        }
+        #if os(macOS)
+        .frame(minWidth: 400, minHeight: 350)
+        #endif
+    }
+
+    private func saveChanges() {
+        var updatedRecording = recording
+        updatedRecording.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        classViewModel.updateRecording(updatedRecording)
+        dismiss()
     }
 }
 
