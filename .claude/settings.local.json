@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(chmod:*)",
+      "Bash(tree:*)",
+      "Bash(./build.sh:*)",
+      "Bash(pkill:*)",
+      "Bash(sqlite3:*)",
+      "Bash(open \"/Applications/iMessage Assistant.app\")",
+      "Bash(log show:*)",
+      "Bash(tccutil reset:*)",
+      "Bash(echo:*)"
+    ]
+  }
+}
