@@ -9,24 +9,23 @@ struct ContentView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                // Class selector - only show if no class is selected yet
-                if !classViewModel.classes.isEmpty && classViewModel.selectedClass == nil {
-                    classSelector
-                        .padding()
-                    Divider()
+            GeometryReader { geometry in
+                VStack(spacing: 0) {
+                    // Main recording area
+                    RecordingView(recordingViewModel: recordingViewModel)
+                        .frame(minHeight: geometry.size.height * 0.45)
+
+                    // Divider with subtle styling
+                    Rectangle()
+                        .fill(Color.primary.opacity(0.1))
+                        .frame(height: 1)
+
+                    // Recordings list
+                    RecordingsListView()
+                        .environmentObject(classViewModel)
                 }
-
-                // Recording view
-                RecordingView(recordingViewModel: recordingViewModel)
-                    .padding()
-
-                Divider()
-
-                // Recordings list
-                RecordingsListView()
-                    .environmentObject(classViewModel)
             }
+            .background(Color.primaryBackground)
             .navigationTitle("Class Transcriber")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
@@ -40,6 +39,8 @@ struct ContentView: View {
                             Label("Manage Classes", systemImage: "folder.badge.gearshape")
                         }
 
+                        Divider()
+
                         Button {
                             showingSettings = true
                         } label: {
@@ -47,6 +48,7 @@ struct ContentView: View {
                         }
                     } label: {
                         Image(systemName: "ellipsis.circle")
+                            .font(.title3)
                     }
                 }
             }
@@ -70,37 +72,33 @@ struct ContentView: View {
             .toast($recordingViewModel.toastMessage)
         }
     }
+}
 
-    private var classSelector: some View {
-        HStack {
-            Text("Class:")
-                .font(.headline)
+// MARK: - Color Extensions
 
-            Picker("Select Class", selection: $classViewModel.selectedClass) {
-                ForEach(classViewModel.classes) { classModel in
-                    Text(classModel.name)
-                        .tag(classModel as ClassModel?)
-                }
-            }
-            #if os(macOS)
-            .pickerStyle(.menu)
-            #else
-            .pickerStyle(.menu)
-            #endif
+extension Color {
+    static var primaryBackground: Color {
+        #if os(macOS)
+        Color(NSColor.windowBackgroundColor)
+        #else
+        Color(UIColor.systemBackground)
+        #endif
+    }
 
-            Spacer()
+    static var secondaryBackground: Color {
+        #if os(macOS)
+        Color(NSColor.controlBackgroundColor)
+        #else
+        Color(UIColor.secondarySystemBackground)
+        #endif
+    }
 
-            if let selectedClass = classViewModel.selectedClass,
-               selectedClass.folderBookmark != nil {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundColor(.green)
-                    .help("Folder configured")
-            } else {
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundColor(.orange)
-                    .help("No folder configured")
-            }
-        }
+    static var tertiaryBackground: Color {
+        #if os(macOS)
+        Color(NSColor.textBackgroundColor)
+        #else
+        Color(UIColor.tertiarySystemBackground)
+        #endif
     }
 }
 

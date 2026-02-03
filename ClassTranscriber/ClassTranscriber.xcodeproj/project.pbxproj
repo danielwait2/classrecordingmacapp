@@ -22,6 +22,11 @@
 		A1000019207A0001 /* ClassEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100001A207A0001 /* ClassEditorView.swift */; };
 		A100001B207A0002 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100001C207A0002 /* SettingsView.swift */; };
 		A100001D207A0003 /* ToastView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100001E207A0003 /* ToastView.swift */; };
+		A1000030207A0004 /* SaveDestination.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000031207A0004 /* SaveDestination.swift */; };
+		A1000032207A0004 /* GoogleAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000033207A0004 /* GoogleAuthService.swift */; };
+		A1000034207A0004 /* GoogleDriveService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000035207A0004 /* GoogleDriveService.swift */; };
+		A1000036207A0004 /* GoogleSignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000037207A0004 /* GoogleSignInView.swift */; };
+		A1000038207A0004 /* GoogleDriveFolderPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000039207A0004 /* GoogleDriveFolderPicker.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -43,6 +48,11 @@
 		A100001B207A0001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A100001C207A0001 /* ClassTranscriber.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ClassTranscriber.entitlements; sourceTree = "<group>"; };
 		A1000020207A0001 /* ClassTranscriber.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ClassTranscriber.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1000031207A0004 /* SaveDestination.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveDestination.swift; sourceTree = "<group>"; };
+		A1000033207A0004 /* GoogleAuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleAuthService.swift; sourceTree = "<group>"; };
+		A1000035207A0004 /* GoogleDriveService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleDriveService.swift; sourceTree = "<group>"; };
+		A1000037207A0004 /* GoogleSignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleSignInView.swift; sourceTree = "<group>"; };
+		A1000039207A0004 /* GoogleDriveFolderPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleDriveFolderPicker.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -91,6 +101,7 @@
 			children = (
 				A1000006207A0001 /* ClassModel.swift */,
 				A1000008207A0001 /* RecordingModel.swift */,
+				A1000031207A0004 /* SaveDestination.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -101,6 +112,8 @@
 				A100000A207A0001 /* AudioRecordingService.swift */,
 				A100000C207A0001 /* TranscriptionService.swift */,
 				A100000E207A0001 /* PDFExportService.swift */,
+				A1000033207A0004 /* GoogleAuthService.swift */,
+				A1000035207A0004 /* GoogleDriveService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -124,6 +137,8 @@
 				A100001A207A0001 /* ClassEditorView.swift */,
 				A100001C207A0002 /* SettingsView.swift */,
 				A100001E207A0003 /* ToastView.swift */,
+				A1000037207A0004 /* GoogleSignInView.swift */,
+				A1000039207A0004 /* GoogleDriveFolderPicker.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -189,9 +204,12 @@
 				A1000003207A0001 /* ContentView.swift in Sources */,
 				A1000005207A0001 /* ClassModel.swift in Sources */,
 				A1000007207A0001 /* RecordingModel.swift in Sources */,
+				A1000030207A0004 /* SaveDestination.swift in Sources */,
 				A1000009207A0001 /* AudioRecordingService.swift in Sources */,
 				A100000B207A0001 /* TranscriptionService.swift in Sources */,
 				A100000D207A0001 /* PDFExportService.swift in Sources */,
+				A1000032207A0004 /* GoogleAuthService.swift in Sources */,
+				A1000034207A0004 /* GoogleDriveService.swift in Sources */,
 				A100000F207A0001 /* ClassViewModel.swift in Sources */,
 				A1000011207A0001 /* RecordingViewModel.swift in Sources */,
 				A1000013207A0001 /* RecordingView.swift in Sources */,
@@ -200,6 +218,8 @@
 				A1000019207A0001 /* ClassEditorView.swift in Sources */,
 				A100001B207A0002 /* SettingsView.swift in Sources */,
 				A100001D207A0003 /* ToastView.swift in Sources */,
+				A1000036207A0004 /* GoogleSignInView.swift in Sources */,
+				A1000038207A0004 /* GoogleDriveFolderPicker.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

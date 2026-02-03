@@ -6,24 +6,31 @@ import AppKit
 struct SettingsView: View {
     @EnvironmentObject var classViewModel: ClassViewModel
     @Environment(\.dismiss) private var dismiss
+    @ObservedObject private var authService = GoogleAuthService.shared
 
     var body: some View {
         NavigationStack {
             Form {
+                // Google Account Section
                 Section {
-                    ForEach(classViewModel.classes) { classModel in
-                        ClassFolderRow(classModel: classModel, classViewModel: classViewModel)
-                    }
+                    googleAccountContent
+                } header: {
+                    Label("Google Account", systemImage: "person.circle")
+                }
 
+                // Class Save Locations Section
+                Section {
                     if classViewModel.classes.isEmpty {
-                        Text("No classes added yet")
-                            .foregroundColor(.secondary)
-                            .italic()
+                        emptyClassesView
+                    } else {
+                        ForEach(classViewModel.classes) { classModel in
+                            ClassFolderRow(classModel: classModel, classViewModel: classViewModel)
+                        }
                     }
                 } header: {
-                    Text("PDF Save Locations")
+                    Label("Class Save Locations", systemImage: "folder")
                 } footer: {
-                    Text("Choose where PDF transcripts are saved for each class. This is typically a folder in your Google Drive.")
+                    Text("Configure where PDF transcripts are saved for each class. Tap Edit to change settings.")
                 }
             }
             .navigationTitle("Settings")
@@ -39,127 +46,201 @@ struct SettingsView: View {
             }
         }
         #if os(macOS)
-        .frame(minWidth: 500, minHeight: 300)
+        .frame(minWidth: 500, minHeight: 450)
         #endif
     }
+
+    // MARK: - Google Account Content
+
+    @ViewBuilder
+    private var googleAccountContent: some View {
+        if authService.isSignedIn, let user = authService.currentUser {
+            // Signed in state
+            HStack(spacing: 12) {
+                // Profile icon
+                ZStack {
+                    Circle()
+                        .fill(Color.blue.opacity(0.2))
+                        .frame(width: 44, height: 44)
+                    Text(String(user.name.prefix(1)).uppercased())
+                        .font(.headline)
+                        .foregroundColor(.blue)
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(user.name)
+                        .font(.headline)
+                    Text(user.email)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
+                Spacer()
+
+                Button("Sign Out") {
+                    authService.signOut()
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            }
+            .padding(.vertical, 4)
+        } else {
+            // Signed out state
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Image(systemName: "cloud")
+                        .font(.title2)
+                        .foregroundColor(.secondary)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Not signed in")
+                            .font(.headline)
+                        Text("Sign in to save transcripts to Google Drive")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+
+                GoogleSignInButton {
+                    Task {
+                        try? await authService.signIn()
+                    }
+                }
+            }
+            .padding(.vertical, 4)
+        }
+    }
+
+    // MARK: - Empty State
+
+    private var emptyClassesView: some View {
+        HStack {
+            Spacer()
+            VStack(spacing: 8) {
+                Image(systemName: "tray")
+                    .font(.title)
+                    .foregroundColor(.secondary)
+                Text("No classes added yet")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                Text("Add a class to configure save locations")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            .padding(.vertical, 20)
+            Spacer()
+        }
+    }
 }
+
+// MARK: - Class Folder Row
 
 struct ClassFolderRow: View {
     let classModel: ClassModel
     @ObservedObject var classViewModel: ClassViewModel
-    @State private var showingFolderPicker = false
+    @State private var showingClassEditor = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
+            // Header row with class name and edit button
             HStack {
-                Text(classModel.name)
-                    .font(.headline)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(classModel.name)
+                        .font(.headline)
+
+                    // Save destination label
+                    Label(classModel.saveDestination.displayName, systemImage: destinationIcon)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
 
                 Spacer()
 
-                Button {
-                    selectFolder()
-                } label: {
-                    Label("Change", systemImage: "folder")
-                        .font(.caption)
-                }
-                .buttonStyle(.bordered)
-            }
-
-            if let folderURL = classModel.resolveFolder() {
-                HStack(spacing: 4) {
+                // Configuration status indicator
+                if classModel.isConfigurationValid {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundColor(.green)
-                        .font(.caption)
-
-                    Text(folderURL.path)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
+                } else {
+                    Image(systemName: "exclamationmark.circle.fill")
+                        .foregroundColor(.orange)
                 }
-            } else {
-                HStack(spacing: 4) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundColor(.orange)
-                        .font(.caption)
 
-                    Text("No folder selected")
-                        .font(.caption)
-                        .foregroundColor(.orange)
+                Button("Edit") {
+                    showingClassEditor = true
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            }
+
+            // Folder details
+            VStack(alignment: .leading, spacing: 6) {
+                // Local folder status
+                if classModel.saveDestination.requiresLocalFolder {
+                    folderStatusRow(
+                        icon: "folder.fill",
+                        label: "Local:",
+                        isConfigured: classModel.hasLocalFolder,
+                        detail: classModel.resolveFolder()?.lastPathComponent ?? "Not set"
+                    )
+                }
+
+                // Drive folder status
+                if classModel.saveDestination.requiresGoogleDrive {
+                    folderStatusRow(
+                        icon: "icloud.fill",
+                        label: "Drive:",
+                        isConfigured: classModel.hasGoogleDriveFolder,
+                        detail: classModel.googleDriveFolder?.folderPath ?? "Not set"
+                    )
                 }
             }
+            .padding(.leading, 4)
         }
-        .padding(.vertical, 4)
-        #if os(iOS)
-        .sheet(isPresented: $showingFolderPicker) {
-            SettingsFolderPickerView(classModel: classModel, classViewModel: classViewModel)
+        .padding(.vertical, 6)
+        .sheet(isPresented: $showingClassEditor) {
+            ClassEditorView(classToEdit: classModel)
+                .environmentObject(classViewModel)
         }
-        #endif
     }
 
-    private func selectFolder() {
-        #if os(macOS)
-        let panel = NSOpenPanel()
-        panel.canChooseFiles = false
-        panel.canChooseDirectories = true
-        panel.allowsMultipleSelection = false
-        panel.canCreateDirectories = true
-        panel.prompt = "Select Folder"
-        panel.message = "Choose where to save PDF transcripts for \(classModel.name)"
-
-        if panel.runModal() == .OK, let url = panel.url {
-            classViewModel.updateClass(classModel, name: classModel.name, folderURL: url)
+    private var destinationIcon: String {
+        switch classModel.saveDestination {
+        case .localOnly:
+            return "folder"
+        case .googleDriveOnly:
+            return "icloud"
+        case .both:
+            return "arrow.triangle.branch"
         }
-        #else
-        showingFolderPicker = true
-        #endif
-    }
-}
-
-#if os(iOS)
-import UIKit
-
-struct SettingsFolderPickerView: UIViewControllerRepresentable {
-    let classModel: ClassModel
-    @ObservedObject var classViewModel: ClassViewModel
-    @Environment(\.dismiss) private var dismiss
-
-    func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
-        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.folder])
-        picker.delegate = context.coordinator
-        return picker
     }
 
-    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {}
+    private func folderStatusRow(icon: String, label: String, isConfigured: Bool, detail: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.caption)
+                .foregroundColor(isConfigured ? .blue : .secondary)
+                .frame(width: 16)
 
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
+            Text(label)
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .frame(width: 40, alignment: .leading)
 
-    class Coordinator: NSObject, UIDocumentPickerDelegate {
-        let parent: SettingsFolderPickerView
-
-        init(_ parent: SettingsFolderPickerView) {
-            self.parent = parent
-        }
-
-        func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
-            guard let url = urls.first else { return }
-
-            // Start accessing security-scoped resource
-            guard url.startAccessingSecurityScopedResource() else { return }
-
-            parent.classViewModel.updateClass(parent.classModel, name: parent.classModel.name, folderURL: url)
-            parent.dismiss()
-        }
-
-        func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
-            parent.dismiss()
+            if isConfigured {
+                Text(detail)
+                    .font(.caption)
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            } else {
+                Text(detail)
+                    .font(.caption)
+                    .foregroundColor(.orange)
+                    .italic()
+            }
         }
     }
 }
-#endif
 
 #Preview {
     SettingsView()

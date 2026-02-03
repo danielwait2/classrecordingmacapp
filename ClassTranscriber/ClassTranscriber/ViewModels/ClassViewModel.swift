@@ -16,13 +16,23 @@ class ClassViewModel: ObservableObject {
 
     // MARK: - Class Management
 
-    func addClass(name: String, folderURL: URL?) {
+    func addClass(
+        name: String,
+        folderURL: URL?,
+        googleDriveFolder: GoogleDriveFolderInfo? = nil,
+        saveDestination: SaveDestination = .localOnly
+    ) {
         var bookmark: Data?
         if let url = folderURL {
             bookmark = ClassModel.createBookmark(for: url)
         }
 
-        let newClass = ClassModel(name: name, folderBookmark: bookmark)
+        let newClass = ClassModel(
+            name: name,
+            folderBookmark: bookmark,
+            googleDriveFolder: googleDriveFolder,
+            saveDestination: saveDestination
+        )
         classes.append(newClass)
         saveClasses()
 
@@ -31,7 +41,13 @@ class ClassViewModel: ObservableObject {
         }
     }
 
-    func updateClass(_ classModel: ClassModel, name: String, folderURL: URL?) {
+    func updateClass(
+        _ classModel: ClassModel,
+        name: String,
+        folderURL: URL?,
+        googleDriveFolder: GoogleDriveFolderInfo? = nil,
+        saveDestination: SaveDestination? = nil
+    ) {
         guard let index = classes.firstIndex(where: { $0.id == classModel.id }) else { return }
 
         var bookmark: Data?
@@ -41,6 +57,12 @@ class ClassViewModel: ObservableObject {
 
         classes[index].name = name
         classes[index].folderBookmark = bookmark
+        classes[index].googleDriveFolder = googleDriveFolder
+
+        if let destination = saveDestination {
+            classes[index].saveDestination = destination
+        }
+
         saveClasses()
 
         if selectedClass?.id == classModel.id {

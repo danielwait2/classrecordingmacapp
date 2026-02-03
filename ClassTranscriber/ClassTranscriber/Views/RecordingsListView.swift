@@ -4,16 +4,37 @@ struct RecordingsListView: View {
     @EnvironmentObject var classViewModel: ClassViewModel
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Recordings")
-                .font(.headline)
-                .padding(.horizontal)
-                .padding(.top, 8)
+        VStack(alignment: .leading, spacing: 0) {
+            // Header
+            HStack {
+                Text("Recordings")
+                    .font(.headline)
 
+                Spacer()
+
+                if let selectedClass = classViewModel.selectedClass {
+                    Text(selectedClass.name)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+            .background(Color.secondary.opacity(0.05))
+
+            // Content
             if classViewModel.selectedClass == nil {
-                emptyStateView(message: "Select a class to view recordings")
+                emptyStateView(
+                    icon: "folder",
+                    title: "No Class Selected",
+                    message: "Select a class to view its recordings"
+                )
             } else if classViewModel.recordingsForSelectedClass().isEmpty {
-                emptyStateView(message: "No recordings yet")
+                emptyStateView(
+                    icon: "waveform",
+                    title: "No Recordings",
+                    message: "Start recording to create your first transcript"
+                )
             } else {
                 List {
                     ForEach(classViewModel.recordingsForSelectedClass()) { recording in
@@ -26,15 +47,27 @@ struct RecordingsListView: View {
         }
     }
 
-    private func emptyStateView(message: String) -> some View {
-        VStack {
+    private func emptyStateView(icon: String, title: String, message: String) -> some View {
+        VStack(spacing: 12) {
             Spacer()
-            Text(message)
-                .font(.body)
+
+            Image(systemName: icon)
+                .font(.system(size: 40))
+                .foregroundColor(.secondary.opacity(0.5))
+
+            Text(title)
+                .font(.headline)
                 .foregroundColor(.secondary)
+
+            Text(message)
+                .font(.subheadline)
+                .foregroundColor(.secondary.opacity(0.8))
+                .multilineTextAlignment(.center)
+
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding()
     }
 
     private func deleteRecordings(at offsets: IndexSet) {
@@ -45,6 +78,8 @@ struct RecordingsListView: View {
     }
 }
 
+// MARK: - Recording Row View
+
 struct RecordingRowView: View {
     let recording: RecordingModel
     @ObservedObject var classViewModel: ClassViewModel
@@ -52,41 +87,70 @@ struct RecordingRowView: View {
     @State private var showingEditSheet = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text(recording.name)
-                    .font(.headline)
-                    .lineLimit(1)
+        Button {
+            showingDetail = true
+        } label: {
+            HStack(spacing: 12) {
+                // Icon
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.accentColor.opacity(0.1))
+                        .frame(width: 40, height: 40)
 
-                Spacer()
+                    Image(systemName: "doc.text")
+                        .font(.system(size: 16))
+                        .foregroundColor(.accentColor)
+                }
 
-                Text(recording.formattedDuration)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+                // Content
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text(recording.name)
+                            .font(.body.weight(.medium))
+                            .foregroundColor(.primary)
+                            .lineLimit(1)
 
-                if recording.pdfExported {
-                    Image(systemName: "doc.fill")
-                        .foregroundColor(.green)
-                        .font(.caption)
+                        Spacer()
+
+                        Text(recording.formattedDuration)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(Color.secondary.opacity(0.1))
+                            .cornerRadius(4)
+                    }
+
+                    HStack {
+                        Text(recording.formattedDate)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+
+                        if recording.pdfExported {
+                            Label("Exported", systemImage: "checkmark.circle.fill")
+                                .font(.caption)
+                                .foregroundColor(.green)
+                        }
+
+                        Spacer()
+
+                        Text("\(recording.transcriptText.split(separator: " ").count) words")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
                 }
             }
-
-            Text(recording.transcriptText.prefix(100) + (recording.transcriptText.count > 100 ? "..." : ""))
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .lineLimit(2)
+            .padding(.vertical, 6)
         }
-        .padding(.vertical, 4)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            showingDetail = true
-        }
+        .buttonStyle(.plain)
         .contextMenu {
             Button {
                 showingEditSheet = true
             } label: {
-                Label("Edit", systemImage: "pencil")
+                Label("Rename", systemImage: "pencil")
             }
+
+            Divider()
 
             Button(role: .destructive) {
                 classViewModel.deleteRecording(recording)
@@ -104,7 +168,7 @@ struct RecordingRowView: View {
             Button {
                 showingEditSheet = true
             } label: {
-                Label("Edit", systemImage: "pencil")
+                Label("Rename", systemImage: "pencil")
             }
             .tint(.blue)
         }
@@ -117,6 +181,8 @@ struct RecordingRowView: View {
     }
 }
 
+// MARK: - Transcript Detail View
+
 struct TranscriptDetailView: View {
     let recording: RecordingModel
     @ObservedObject var classViewModel: ClassViewModel
@@ -126,40 +192,46 @@ struct TranscriptDetailView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    // Metadata
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text("Date:")
-                                .fontWeight(.semibold)
-                            Text(recording.formattedDate)
-                        }
-
-                        HStack {
-                            Text("Duration:")
-                                .fontWeight(.semibold)
-                            Text(recording.formattedDuration)
-                        }
+                VStack(alignment: .leading, spacing: 20) {
+                    // Metadata card
+                    VStack(spacing: 12) {
+                        MetadataRow(label: "Date", value: recording.formattedDate)
+                        Divider()
+                        MetadataRow(label: "Duration", value: recording.formattedDuration)
+                        Divider()
+                        MetadataRow(label: "Words", value: "\(recording.transcriptText.split(separator: " ").count)")
 
                         if recording.pdfExported {
+                            Divider()
                             HStack {
-                                Image(systemName: "checkmark.circle.fill")
+                                Text("Status")
+                                    .foregroundColor(.secondary)
+                                Spacer()
+                                Label("PDF Exported", systemImage: "checkmark.circle.fill")
                                     .foregroundColor(.green)
-                                Text("PDF exported")
                             }
+                            .font(.subheadline)
                         }
                     }
-                    .font(.subheadline)
-
-                    Divider()
+                    .padding(16)
+                    .background(Color.secondaryBackground)
+                    .cornerRadius(12)
 
                     // Transcript
-                    Text(recording.transcriptText.isEmpty ? "No transcript available" : recording.transcriptText)
-                        .font(.body)
-                        .textSelection(.enabled)
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Transcript")
+                            .font(.headline)
+
+                        Text(recording.transcriptText.isEmpty ? "No transcript available" : recording.transcriptText)
+                            .font(.body)
+                            .foregroundColor(recording.transcriptText.isEmpty ? .secondary : .primary)
+                            .textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
                 }
-                .padding()
+                .padding(20)
             }
+            .background(Color.primaryBackground)
             .navigationTitle(recording.name)
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
@@ -184,10 +256,30 @@ struct TranscriptDetailView: View {
             }
         }
         #if os(macOS)
-        .frame(minWidth: 500, minHeight: 400)
+        .frame(minWidth: 550, minHeight: 450)
         #endif
     }
 }
+
+// MARK: - Metadata Row
+
+struct MetadataRow: View {
+    let label: String
+    let value: String
+
+    var body: some View {
+        HStack {
+            Text(label)
+                .foregroundColor(.secondary)
+            Spacer()
+            Text(value)
+                .foregroundColor(.primary)
+        }
+        .font(.subheadline)
+    }
+}
+
+// MARK: - Recording Editor View
 
 struct RecordingEditorView: View {
     let recording: RecordingModel
@@ -201,44 +293,38 @@ struct RecordingEditorView: View {
             Form {
                 Section {
                     TextField("Recording Name", text: $name)
+                        .font(.body)
                 } header: {
                     Text("Name")
                 }
 
                 Section {
-                    HStack {
-                        Text("Date")
-                        Spacer()
-                        Text(recording.formattedDate)
-                            .foregroundColor(.secondary)
-                    }
-
-                    HStack {
-                        Text("Duration")
-                        Spacer()
-                        Text(recording.formattedDuration)
-                            .foregroundColor(.secondary)
-                    }
+                    MetadataRow(label: "Date", value: recording.formattedDate)
+                    MetadataRow(label: "Duration", value: recording.formattedDuration)
+                    MetadataRow(label: "Words", value: "\(recording.transcriptText.split(separator: " ").count)")
 
                     HStack {
                         Text("PDF Exported")
+                            .foregroundColor(.secondary)
                         Spacer()
-                        Image(systemName: recording.pdfExported ? "checkmark.circle.fill" : "xmark.circle")
+                        Image(systemName: recording.pdfExported ? "checkmark.circle.fill" : "circle")
                             .foregroundColor(recording.pdfExported ? .green : .secondary)
                     }
+                    .font(.subheadline)
                 } header: {
                     Text("Details")
                 }
 
                 Section {
-                    Text(recording.transcriptText.isEmpty ? "No transcript available" : String(recording.transcriptText.prefix(500)) + (recording.transcriptText.count > 500 ? "..." : ""))
-                        .font(.caption)
+                    Text(recording.transcriptText.isEmpty ? "No transcript available" : String(recording.transcriptText.prefix(300)) + (recording.transcriptText.count > 300 ? "…" : ""))
+                        .font(.subheadline)
                         .foregroundColor(.secondary)
+                        .lineLimit(6)
                 } header: {
-                    Text("Transcript Preview")
+                    Text("Preview")
                 }
             }
-            .navigationTitle("Edit Recording")
+            .navigationTitle("Rename Recording")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif

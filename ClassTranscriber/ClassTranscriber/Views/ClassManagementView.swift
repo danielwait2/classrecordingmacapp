@@ -8,17 +8,11 @@ struct ClassManagementView: View {
 
     var body: some View {
         NavigationStack {
-            List {
+            Group {
                 if classViewModel.classes.isEmpty {
-                    Text("No classes yet. Add your first class to get started.")
-                        .foregroundColor(.secondary)
+                    emptyStateView
                 } else {
-                    ForEach(classViewModel.classes) { classModel in
-                        ClassRowView(classModel: classModel) {
-                            classToEdit = classModel
-                        }
-                    }
-                    .onDelete(perform: deleteClasses)
+                    classList
                 }
             }
             .navigationTitle("Manage Classes")
@@ -36,7 +30,7 @@ struct ClassManagementView: View {
                     Button {
                         showingAddClass = true
                     } label: {
-                        Label("Add Class", systemImage: "plus")
+                        Image(systemName: "plus")
                     }
                 }
             }
@@ -50,8 +44,55 @@ struct ClassManagementView: View {
             }
         }
         #if os(macOS)
-        .frame(minWidth: 400, minHeight: 300)
+        .frame(minWidth: 450, minHeight: 350)
         #endif
+    }
+
+    // MARK: - Empty State
+
+    private var emptyStateView: some View {
+        VStack(spacing: 16) {
+            Spacer()
+
+            Image(systemName: "folder.badge.plus")
+                .font(.system(size: 48))
+                .foregroundColor(.secondary.opacity(0.5))
+
+            Text("No Classes")
+                .font(.title2.weight(.semibold))
+                .foregroundColor(.primary)
+
+            Text("Add your first class to start\nrecording and transcribing lectures")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+
+            Button {
+                showingAddClass = true
+            } label: {
+                Label("Add Class", systemImage: "plus")
+                    .font(.headline)
+            }
+            .buttonStyle(.borderedProminent)
+            .padding(.top, 8)
+
+            Spacer()
+        }
+        .padding()
+    }
+
+    // MARK: - Class List
+
+    private var classList: some View {
+        List {
+            ForEach(classViewModel.classes) { classModel in
+                ClassRowView(classModel: classModel) {
+                    classToEdit = classModel
+                }
+            }
+            .onDelete(perform: deleteClasses)
+        }
+        .listStyle(.inset)
     }
 
     private func deleteClasses(at offsets: IndexSet) {
@@ -61,38 +102,90 @@ struct ClassManagementView: View {
     }
 }
 
+// MARK: - Class Row View
+
 struct ClassRowView: View {
     let classModel: ClassModel
     let onEdit: () -> Void
 
     var body: some View {
-        HStack {
+        HStack(spacing: 12) {
+            // Class icon
+            ZStack {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(statusColor.opacity(0.15))
+                    .frame(width: 44, height: 44)
+
+                Image(systemName: destinationIcon)
+                    .font(.system(size: 18))
+                    .foregroundColor(statusColor)
+            }
+
+            // Class info
             VStack(alignment: .leading, spacing: 4) {
                 Text(classModel.name)
-                    .font(.headline)
+                    .font(.body.weight(.medium))
 
-                if let folderURL = classModel.resolveFolder() {
-                    Text(folderURL.lastPathComponent)
+                HStack(spacing: 8) {
+                    Label(classModel.saveDestination.displayName, systemImage: saveDestinationIcon)
                         .font(.caption)
                         .foregroundColor(.secondary)
-                } else {
-                    Text("No folder configured")
-                        .font(.caption)
-                        .foregroundColor(.orange)
+
+                    if classModel.isConfigurationValid {
+                        Label("Configured", systemImage: "checkmark.circle.fill")
+                            .font(.caption)
+                            .foregroundColor(.green)
+                    } else {
+                        Label("Setup needed", systemImage: "exclamationmark.circle.fill")
+                            .font(.caption)
+                            .foregroundColor(.orange)
+                    }
                 }
             }
 
             Spacer()
 
+            // Edit button
             Button {
                 onEdit()
             } label: {
-                Image(systemName: "pencil.circle")
-                    .font(.title2)
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(.secondary)
             }
             .buttonStyle(.plain)
         }
         .padding(.vertical, 4)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            onEdit()
+        }
+    }
+
+    private var statusColor: Color {
+        classModel.isConfigurationValid ? .accentColor : .orange
+    }
+
+    private var destinationIcon: String {
+        switch classModel.saveDestination {
+        case .localOnly:
+            return "folder.fill"
+        case .googleDriveOnly:
+            return "icloud.fill"
+        case .both:
+            return "arrow.triangle.branch"
+        }
+    }
+
+    private var saveDestinationIcon: String {
+        switch classModel.saveDestination {
+        case .localOnly:
+            return "folder"
+        case .googleDriveOnly:
+            return "icloud"
+        case .both:
+            return "arrow.triangle.branch"
+        }
     }
 }
 
