@@ -87,19 +87,35 @@ class RecordingViewModel: ObservableObject {
             self.transcribedText = ""
         }
 
+        // On macOS, start transcription FIRST so the buffer handler is set up
+        // before SharedAudioManager starts sending audio buffers
+        #if os(macOS)
+        if realtimeTranscription {
+            transcriptionService.startTranscribing()
+        }
+        #endif
+
         guard let audioURL = audioService.startRecording() else {
             DispatchQueue.main.async {
                 self.errorMessage = self.audioService.lastError ?? "Failed to start recording"
             }
+            // Stop transcription if recording failed
+            #if os(macOS)
+            if realtimeTranscription {
+                transcriptionService.stopTranscribing()
+            }
+            #endif
             return
         }
 
         currentAudioURL = audioURL
 
-        // Only start real-time transcription if enabled
+        // On iOS, start transcription after recording (works alongside AVAudioRecorder)
+        #if os(iOS)
         if realtimeTranscription {
             transcriptionService.startTranscribing()
         }
+        #endif
 
         DispatchQueue.main.async {
             self.isRecording = true
@@ -246,6 +262,12 @@ class RecordingViewModel: ObservableObject {
             try? FileManager.default.removeItem(at: result.url)
         }
         transcriptionService.stopTranscribing()
+
+        // Clear any pending toast message when canceling
+        DispatchQueue.main.async {
+            self.toastMessage = nil
+        }
+
         reset()
     }
 
@@ -416,6 +438,7 @@ class RecordingViewModel: ObservableObject {
             self.currentDuration = 0
             self.transcribedText = ""
             self.currentAudioURL = nil
+            self.errorMessage = nil
         }
     }
 
