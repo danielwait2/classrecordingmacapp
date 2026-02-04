@@ -91,6 +91,7 @@ struct RecordingRowView: View {
     @ObservedObject var classViewModel: ClassViewModel
     @State private var showingDetail = false
     @State private var showingEditSheet = false
+    @State private var showingDeleteConfirmation = false
 
     var body: some View {
         Button {
@@ -153,12 +154,67 @@ struct RecordingRowView: View {
                             .foregroundColor(.secondary)
                     }
                 }
+
+                // Action buttons
+                HStack(spacing: 8) {
+                    // Show in Finder button (only if PDF exported)
+                    if recording.pdfExported {
+                        Button {
+                            revealPDFInFinder()
+                        } label: {
+                            Image(systemName: "folder")
+                                .font(.system(size: 14))
+                                .foregroundColor(.blue)
+                                .frame(width: 32, height: 32)
+                                .background(Color.blue.opacity(0.1))
+                                .cornerRadius(6)
+                        }
+                        .buttonStyle(.plain)
+                        .help("Show PDF in Finder")
+                    }
+
+                    // Delete button
+                    Button {
+                        showingDeleteConfirmation = true
+                    } label: {
+                        Image(systemName: "trash")
+                            .font(.system(size: 14))
+                            .foregroundColor(.red)
+                            .frame(width: 32, height: 32)
+                            .background(Color.red.opacity(0.1))
+                            .cornerRadius(6)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Delete recording")
+                }
             }
             .padding(.vertical, 12)
             .padding(.horizontal, 4)
         }
         .buttonStyle(.plain)
+        .confirmationDialog("Delete Recording?", isPresented: $showingDeleteConfirmation, titleVisibility: .visible) {
+            Button("Delete", role: .destructive) {
+                classViewModel.deleteRecording(recording)
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("This will permanently delete \"\(recording.name)\" and its transcript. This action cannot be undone.")
+        }
         .contextMenu {
+            Button {
+                showingDetail = true
+            } label: {
+                Label("View Transcript", systemImage: "doc.text")
+            }
+
+            if recording.pdfExported {
+                Button {
+                    revealPDFInFinder()
+                } label: {
+                    Label("Show PDF in Finder", systemImage: "folder")
+                }
+            }
+
             Button {
                 showingEditSheet = true
             } label: {
@@ -192,6 +248,40 @@ struct RecordingRowView: View {
         }
         .sheet(isPresented: $showingEditSheet) {
             RecordingEditorView(recording: recording, classViewModel: classViewModel)
+        }
+    }
+
+    private func revealPDFInFinder() {
+        guard let classModel = classViewModel.classes.first(where: { $0.id == recording.classId }) else {
+            return
+        }
+
+        let pdfFileName = "\(recording.name).pdf"
+        var pdfURL: URL?
+
+        // Check save destination
+        switch classModel.saveDestination {
+        case .localOnly, .both:
+            if let localURL = classModel.resolveFolder() {
+                pdfURL = localURL.appendingPathComponent(pdfFileName)
+            }
+        case .googleDriveOnly:
+            // For Google Drive, we can't reveal in Finder, show a message
+            #if os(macOS)
+            NSWorkspace.shared.open(URL(string: "https://drive.google.com")!)
+            #endif
+            return
+        }
+
+        // Reveal in Finder (macOS) or Files (iOS)
+        if let pdfURL = pdfURL, FileManager.default.fileExists(atPath: pdfURL.path) {
+            #if os(macOS)
+            NSWorkspace.shared.activateFileViewerSelecting([pdfURL])
+            #else
+            // iOS: Open the Files app to the document directory
+            let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+            UIApplication.shared.open(documentsURL)
+            #endif
         }
     }
 }

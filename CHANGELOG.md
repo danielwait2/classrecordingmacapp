@@ -2,6 +2,10 @@
 
 ## 2026-02-04
 
+### Added
+- Visible delete button on each recording row (with confirmation dialog)
+- Visible "Show in Finder" button for exported PDFs
+
 ### Fixed
 - Live transcription word counter no longer resets every few seconds
 - Words no longer disappear during live transcription
