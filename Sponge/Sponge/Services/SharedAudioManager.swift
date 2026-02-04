@@ -69,9 +69,18 @@ class SharedAudioManager {
                 print("SharedAudioManager: Created audio converter from \(inputFormat.sampleRate)Hz/\(inputFormat.channelCount)ch to \(standardFormat.sampleRate)Hz/\(standardFormat.channelCount)ch")
             }
 
-            // Create the audio file using the standard format directly
-            // AVAudioFile(forWriting:settings:) uses the format for both file and processing
-            audioFile = try AVAudioFile(forWriting: url, settings: standardFormat.settings)
+            // Use explicit CAF settings that match Float32 format
+            let cafSettings: [String: Any] = [
+                AVFormatIDKey: Int(kAudioFormatLinearPCM),
+                AVSampleRateKey: 44100.0,
+                AVNumberOfChannelsKey: 1,
+                AVLinearPCMBitDepthKey: 32,
+                AVLinearPCMIsFloatKey: true,
+                AVLinearPCMIsBigEndianKey: false,
+                AVLinearPCMIsNonInterleaved: true
+            ]
+
+            audioFile = try AVAudioFile(forWriting: url, settings: cafSettings)
             recordingURL = url
             isRecording = true
             print("SharedAudioManager: Audio file created successfully")
