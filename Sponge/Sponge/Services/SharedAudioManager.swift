@@ -48,21 +48,13 @@ class SharedAudioManager {
                          userInfo: [NSLocalizedDescriptionKey: "Invalid input format - sampleRate: \(inputFormat.sampleRate), channels: \(inputFormat.channelCount)"])
         }
 
-        // If recording, create the audio file with explicit PCM settings
+        // If recording, create the audio file using the exact input format
         if let url = url {
-            // Create explicit PCM settings for CAF file
-            let audioSettings: [String: Any] = [
-                AVFormatIDKey: kAudioFormatLinearPCM,
-                AVSampleRateKey: inputFormat.sampleRate,
-                AVNumberOfChannelsKey: inputFormat.channelCount,
-                AVLinearPCMBitDepthKey: 32,
-                AVLinearPCMIsFloatKey: true,
-                AVLinearPCMIsBigEndianKey: false,
-                AVLinearPCMIsNonInterleaved: false
-            ]
-
             print("SharedAudioManager: Creating audio file at \(url.path)")
-            audioFile = try AVAudioFile(forWriting: url, settings: audioSettings)
+            print("SharedAudioManager: Using format - \(inputFormat)")
+
+            // Use the input format directly - AVAudioFile will use the format's settings
+            audioFile = try AVAudioFile(forWriting: url, settings: inputFormat.settings, commonFormat: inputFormat.commonFormat, interleaved: inputFormat.isInterleaved)
             recordingURL = url
             isRecording = true
             print("SharedAudioManager: Audio file created successfully")
