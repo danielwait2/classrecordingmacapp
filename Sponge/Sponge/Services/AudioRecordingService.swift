@@ -61,8 +61,8 @@ class AudioRecordingService: NSObject, ObservableObject {
         let recordingsPath = documentsPath.appendingPathComponent("Recordings")
 
         #if os(macOS)
-        // On macOS, use .caf format (Core Audio Format) which supports native PCM from AVAudioEngine
-        let fileName = "recording_\(Date().timeIntervalSince1970).caf"
+        // On macOS, use .wav format which is widely compatible
+        let fileName = "recording_\(Date().timeIntervalSince1970).wav"
         let fileURL = recordingsPath.appendingPathComponent(fileName)
 
         print("AudioRecordingService: Attempting to start recording to \(fileURL.path)")
