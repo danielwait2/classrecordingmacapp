@@ -85,10 +85,15 @@ class TranscriptionService: ObservableObject {
         transcribedText = ""
         error = nil
 
+        print("TranscriptionService: Starting legacy transcription")
+
         guard let recognizer = speechRecognizer, recognizer.isAvailable else {
             error = "Speech recognizer is not available"
+            print("TranscriptionService: Speech recognizer not available")
             return
         }
+
+        print("TranscriptionService: Speech recognizer is available")
 
         // Cancel any existing task
         if recognitionTask != nil {
@@ -100,8 +105,11 @@ class TranscriptionService: ObservableObject {
             recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
             guard let recognitionRequest = recognitionRequest else {
                 error = "Unable to create recognition request"
+                print("TranscriptionService: Failed to create recognition request")
                 return
             }
+
+            print("TranscriptionService: Recognition request created")
 
             recognitionRequest.shouldReportPartialResults = true
 
@@ -122,7 +130,9 @@ class TranscriptionService: ObservableObject {
             #if os(macOS)
             // On macOS, use SharedAudioManager to receive audio buffers
             // The AudioRecordingService starts the SharedAudioManager, we just hook into it
+            print("TranscriptionService: Setting up buffer handler for SharedAudioManager")
             SharedAudioManager.shared.transcriptionBufferHandler = { [weak self] buffer in
+                print("TranscriptionService: Received buffer with \(buffer.frameLength) frames")
                 self?.recognitionRequest?.append(buffer)
             }
             #else
@@ -149,6 +159,8 @@ class TranscriptionService: ObservableObject {
             try audioEngine.start()
             #endif
 
+            print("TranscriptionService: Starting recognition task")
+
             recognitionTask = recognizer.recognitionTask(with: recognitionRequest) { [weak self] result, error in
                 guard let self = self else { return }
 
@@ -156,6 +168,7 @@ class TranscriptionService: ObservableObject {
 
                 if let result = result {
                     let newText = result.bestTranscription.formattedString
+                    print("TranscriptionService: Got result: \(newText.prefix(50))...")
                     DispatchQueue.main.async {
                         // Append new text to base transcript
                         if self.baseTranscript.isEmpty {
@@ -170,6 +183,7 @@ class TranscriptionService: ObservableObject {
                 // Handle errors and auto-restart for continuous transcription
                 if let error = error {
                     let nsError = error as NSError
+                    print("TranscriptionService: Recognition error - code: \(nsError.code), message: \(error.localizedDescription)")
                     // Error code 203 = "Retry" (normal timeout after ~1 minute)
                     // Error code 216 = "Canceled"
 
@@ -204,7 +218,10 @@ class TranscriptionService: ObservableObject {
                 self.error = nil
             }
 
+            print("TranscriptionService: Transcription started successfully")
+
         } catch {
+            print("TranscriptionService: Failed to start - \(error.localizedDescription)")
             self.error = "Failed to start transcription: \(error.localizedDescription)"
             cleanupAudioEngine()
         }
