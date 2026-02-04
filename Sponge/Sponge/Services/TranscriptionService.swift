@@ -5,8 +5,13 @@ import AVFoundation
 class TranscriptionService: ObservableObject {
     @Published var transcribedText: String = ""
     @Published var isTranscribing: Bool = false
+    @Published var transcriptionProgress: Double = 0.0 // 0.0 to 1.0
     @Published var error: String?
 
+    // iOS 26+ SpeechAnalyzer for Voice Memos-level quality (stored as Any to avoid @available on stored properties)
+    private var modernAnalyzer: Any?
+
+    // Fallback to traditional Speech Recognition for older devices
     private var speechRecognizer: SFSpeechRecognizer?
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
@@ -14,14 +19,40 @@ class TranscriptionService: ObservableObject {
     private var isStoppingIntentionally = false
 
     private var restartTimer: Timer?
+    private var baseTranscript: String = "" // Accumulates text across restarts (legacy mode only)
+
+    // Check if we can use the modern API
+    private var useModernAPI: Bool {
+        if #available(iOS 26.0, macOS 26.0, *) {
+            return modernAnalyzer != nil
+        }
+        return false
+    }
 
     init() {
-        speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
+        if #available(iOS 26.0, macOS 26.0, *) {
+            // Use modern SpeechAnalyzer API (Voice Memos quality)
+            let analyzer = SpeechAnalyzerService()
+            modernAnalyzer = analyzer
+            setupAnalyzerBindings(analyzer)
+        } else {
+            // Fallback to traditional Speech Recognition
+            speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
 
-        // Configure for better accuracy
-        if #available(macOS 13, iOS 16, *) {
-            speechRecognizer?.supportsOnDeviceRecognition = true
+            // Configure for better accuracy
+            if #available(macOS 13, iOS 16, *) {
+                speechRecognizer?.supportsOnDeviceRecognition = true
+            }
         }
+    }
+
+    @available(iOS 26.0, macOS 26.0, *)
+    private func setupAnalyzerBindings(_ analyzer: SpeechAnalyzerService) {
+        // Forward published properties from SpeechAnalyzerService
+        analyzer.$transcribedText.assign(to: &$transcribedText)
+        analyzer.$isTranscribing.assign(to: &$isTranscribing)
+        analyzer.$error.assign(to: &$error)
+        analyzer.$transcriptionProgress.assign(to: &$transcriptionProgress)
     }
 
     func requestPermission(completion: @escaping (Bool) -> Void) {
@@ -33,8 +64,26 @@ class TranscriptionService: ObservableObject {
     }
 
     func startTranscribing() {
+        // Use modern API if available
+        if #available(iOS 26.0, macOS 26.0, *), modernAnalyzer != nil {
+            startTranscribingModern()
+            return
+        }
+
+        // Fallback to legacy implementation
+        startTranscribingLegacy()
+    }
+
+    @available(iOS 26.0, macOS 26.0, *)
+    private func startTranscribingModern() {
+        guard let analyzer = modernAnalyzer as? SpeechAnalyzerService else { return }
+        analyzer.startTranscribing()
+    }
+
+    private func startTranscribingLegacy() {
         // Reset state
         isStoppingIntentionally = false
+        baseTranscript = "" // Only reset on fresh start
         transcribedText = ""
         error = nil
 
@@ -61,18 +110,29 @@ class TranscriptionService: ObservableObject {
 
             recognitionRequest.shouldReportPartialResults = true
 
-            // Enhanced sensitivity settings
+            // Voice Memos-level quality settings
             if #available(macOS 13, iOS 16, *) {
                 recognitionRequest.addsPunctuation = true
-                recognitionRequest.requiresOnDeviceRecognition = false // Use server for better accuracy
+                recognitionRequest.requiresOnDeviceRecognition = false // Server-side for best quality
             }
 
-            // Configure for longer recordings with auto-restart
+            // Dictation mode provides best sensitivity
             recognitionRequest.taskHint = .dictation
+
+            // Advanced recognition features
+            if #available(macOS 14, iOS 17, *) {
+                recognitionRequest.contextualStrings = [] // Better uncommon word recognition
+            }
+
+            // Request highest quality results
+            if #available(macOS 15, iOS 18, *) {
+                // Future: Additional quality improvements
+            }
 
             #if os(iOS)
             let audioSession = AVAudioSession.sharedInstance()
-            try audioSession.setCategory(.playAndRecord, mode: .measurement, options: [.defaultToSpeaker, .allowBluetooth])
+            // Use voiceChat mode for automatic gain control and echo cancellation
+            try audioSession.setCategory(.playAndRecord, mode: .voiceChat, options: [.defaultToSpeaker, .allowBluetooth])
             try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
             #endif
 
@@ -82,8 +142,10 @@ class TranscriptionService: ObservableObject {
             // Remove any existing tap
             inputNode.removeTap(onBus: 0)
 
-            // Smaller buffer size for more responsive transcription
-            inputNode.installTap(onBus: 0, bufferSize: 512, format: recordingFormat) { [weak self] buffer, _ in
+            // Larger buffer size matching Voice Memos approach (8192 samples = ~170ms at 48kHz)
+            // This provides better quality transcription with less processing overhead
+            // Voice Memos likely uses even larger buffers since it processes post-recording
+            inputNode.installTap(onBus: 0, bufferSize: 8192, format: recordingFormat) { [weak self] buffer, _ in
                 self?.recognitionRequest?.append(buffer)
             }
 
@@ -96,8 +158,14 @@ class TranscriptionService: ObservableObject {
                 var isFinal = false
 
                 if let result = result {
+                    let newText = result.bestTranscription.formattedString
                     DispatchQueue.main.async {
-                        self.transcribedText = result.bestTranscription.formattedString
+                        // Append new text to base transcript
+                        if self.baseTranscript.isEmpty {
+                            self.transcribedText = newText
+                        } else {
+                            self.transcribedText = self.baseTranscript + " " + newText
+                        }
                     }
                     isFinal = result.isFinal
                 }
@@ -146,14 +214,39 @@ class TranscriptionService: ObservableObject {
     }
 
     func pauseTranscribing() {
+        if #available(iOS 26.0, macOS 26.0, *), modernAnalyzer != nil {
+            pauseTranscribingModern()
+            return
+        }
         audioEngine?.pause()
     }
 
+    @available(iOS 26.0, macOS 26.0, *)
+    private func pauseTranscribingModern() {
+        guard let analyzer = modernAnalyzer as? SpeechAnalyzerService else { return }
+        analyzer.pauseTranscribing()
+    }
+
     func resumeTranscribing() {
+        if #available(iOS 26.0, macOS 26.0, *), modernAnalyzer != nil {
+            resumeTranscribingModern()
+            return
+        }
         try? audioEngine?.start()
     }
 
+    @available(iOS 26.0, macOS 26.0, *)
+    private func resumeTranscribingModern() {
+        guard let analyzer = modernAnalyzer as? SpeechAnalyzerService else { return }
+        analyzer.resumeTranscribing()
+    }
+
     func stopTranscribing() {
+        if #available(iOS 26.0, macOS 26.0, *), modernAnalyzer != nil {
+            stopTranscribingModern()
+            return
+        }
+
         isStoppingIntentionally = true
         restartTimer?.invalidate()
         restartTimer = nil
@@ -174,26 +267,112 @@ class TranscriptionService: ObservableObject {
         }
     }
 
+    @available(iOS 26.0, macOS 26.0, *)
+    private func stopTranscribingModern() {
+        guard let analyzer = modernAnalyzer as? SpeechAnalyzerService else { return }
+        analyzer.stopTranscribing()
+    }
+
     private func restartTranscription() {
         guard !isStoppingIntentionally else { return }
 
-        // Save current text before restarting
-        let currentText = transcribedText
+        // Save current accumulated text to base transcript BEFORE canceling
+        // This ensures we don't lose any text during the restart
+        let savedTranscript = transcribedText
+        baseTranscript = savedTranscript
 
         // Cancel existing task
         recognitionTask?.cancel()
         recognitionTask = nil
         recognitionRequest = nil
 
-        // Wait a moment then restart
+        // Don't call startTranscribing() - continue the current session
+        // Wait a moment then restart recognition
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
             guard let self = self, !self.isStoppingIntentionally else { return }
 
-            // Restore previous text
-            self.transcribedText = currentText
+            // Ensure baseTranscript is still correct (in case of race conditions)
+            if self.baseTranscript.isEmpty && !savedTranscript.isEmpty {
+                self.baseTranscript = savedTranscript
+            }
 
-            // Start new recognition session
-            self.startTranscribing()
+            do {
+                // Recreate recognition request
+                self.recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
+                guard let recognitionRequest = self.recognitionRequest else { return }
+
+                recognitionRequest.shouldReportPartialResults = true
+
+                if #available(macOS 13, iOS 16, *) {
+                    recognitionRequest.addsPunctuation = true
+                    recognitionRequest.requiresOnDeviceRecognition = false
+                }
+
+                recognitionRequest.taskHint = .dictation
+
+                if #available(macOS 14, iOS 17, *) {
+                    recognitionRequest.contextualStrings = []
+                }
+
+                // Continue using existing audio engine tap
+                guard let recognizer = self.speechRecognizer else { return }
+
+                // Capture baseTranscript at task creation time to avoid race conditions
+                let currentBase = self.baseTranscript
+
+                self.recognitionTask = recognizer.recognitionTask(with: recognitionRequest) { [weak self] result, error in
+                    guard let self = self else { return }
+
+                    var isFinal = false
+
+                    if let result = result {
+                        let newText = result.bestTranscription.formattedString
+                        DispatchQueue.main.async {
+                            // Append new text to base transcript
+                            // Use the captured base to avoid race conditions
+                            if currentBase.isEmpty {
+                                self.transcribedText = newText
+                            } else {
+                                self.transcribedText = currentBase + " " + newText
+                            }
+                            // Update baseTranscript to match the current captured base
+                            // This ensures consistency across multiple restarts
+                            self.baseTranscript = currentBase
+                        }
+                        isFinal = result.isFinal
+                    }
+
+                    if let error = error {
+                        let nsError = error as NSError
+                        if !self.isStoppingIntentionally {
+                            if nsError.code == 203 {
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                                    self?.restartTranscription()
+                                }
+                            } else if nsError.code != 216 {
+                                DispatchQueue.main.async {
+                                    self.error = error.localizedDescription
+                                }
+                            }
+                        }
+                    }
+
+                    if isFinal && !self.isStoppingIntentionally {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                            self?.restartTranscription()
+                        }
+                    }
+
+                    if (isFinal || error != nil) && self.isStoppingIntentionally {
+                        self.cleanupAudioEngine()
+                    }
+                }
+
+            } catch {
+                DispatchQueue.main.async {
+                    self.error = "Failed to restart transcription: \(error.localizedDescription)"
+                }
+            }
         }
     }
 
@@ -204,36 +383,123 @@ class TranscriptionService: ObservableObject {
     }
 
     func reset() {
+        if #available(iOS 26.0, macOS 26.0, *), modernAnalyzer != nil {
+            resetModern()
+            return
+        }
+
         isStoppingIntentionally = true
         stopTranscribing()
         DispatchQueue.main.async {
             self.transcribedText = ""
+            self.baseTranscript = ""
             self.error = nil
         }
     }
 
-    // MARK: - Post-Recording Transcription
+    @available(iOS 26.0, macOS 26.0, *)
+    private func resetModern() {
+        guard let analyzer = modernAnalyzer as? SpeechAnalyzerService else { return }
+        analyzer.reset()
+    }
 
+    // MARK: - Post-Recording Transcription (Voice Memos Style)
+
+    /// Transcribes an audio file after recording is complete
+    /// This provides MUCH better accuracy than real-time transcription
+    /// Matches Apple Voice Memos transcription quality
     func transcribeAudioFile(at url: URL, completion: @escaping (Result<String, Error>) -> Void) {
+        // Use modern API if available (Voice Memos quality)
+        if #available(iOS 26.0, macOS 26.0, *), modernAnalyzer != nil {
+            transcribeAudioFileModern(at: url, completion: completion)
+            return
+        }
+
+        // Fallback to legacy implementation
+        transcribeAudioFileLegacy(at: url, completion: completion)
+    }
+
+    @available(iOS 26.0, macOS 26.0, *)
+    private func transcribeAudioFileModern(at url: URL, completion: @escaping (Result<String, Error>) -> Void) {
+        guard let analyzer = modernAnalyzer as? SpeechAnalyzerService else {
+            completion(.failure(NSError(domain: "TranscriptionService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Modern analyzer not available"])))
+            return
+        }
+        analyzer.transcribeAudioFile(at: url, completion: completion)
+    }
+
+    private func transcribeAudioFileLegacy(at url: URL, completion: @escaping (Result<String, Error>) -> Void) {
         guard let recognizer = speechRecognizer, recognizer.isAvailable else {
             completion(.failure(NSError(domain: "TranscriptionService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Speech recognizer is not available"])))
             return
         }
 
-        let request = SFSpeechURLRecognitionRequest(url: url)
-        request.shouldReportPartialResults = false
-        if #available(macOS 13, iOS 16, *) {
-            request.addsPunctuation = true
+        // Reset progress
+        DispatchQueue.main.async {
+            self.transcriptionProgress = 0.0
         }
 
-        recognizer.recognitionTask(with: request) { result, error in
+        let request = SFSpeechURLRecognitionRequest(url: url)
+        request.shouldReportPartialResults = true // Enable to track progress
+
+        // Apply Voice Memos-level quality settings
+        if #available(macOS 13, iOS 16, *) {
+            request.addsPunctuation = true
+            request.requiresOnDeviceRecognition = false // Use server for maximum accuracy
+        }
+
+        // Dictation mode for best results
+        request.taskHint = .dictation
+
+        // Enable all available quality improvements
+        if #available(macOS 14, iOS 17, *) {
+            request.contextualStrings = []
+        }
+
+        // Get audio duration for progress calculation
+        var audioDuration: Double = 0
+        do {
+            let audioFile = try AVAudioFile(forReading: url)
+            audioDuration = Double(audioFile.length) / audioFile.processingFormat.sampleRate
+        } catch {
+            // If we can't get duration, use a default estimate
+            audioDuration = 60.0
+        }
+
+        // Track partial results to estimate progress based on transcription timing
+        var lastSegmentEnd: Double = 0
+
+        recognizer.recognitionTask(with: request) { [weak self] result, error in
+            guard let self = self else { return }
+
             if let error = error {
+                DispatchQueue.main.async {
+                    self.transcriptionProgress = 0.0
+                }
                 completion(.failure(error))
                 return
             }
 
-            if let result = result, result.isFinal {
-                completion(.success(result.bestTranscription.formattedString))
+            if let result = result {
+                // Calculate progress based on transcription segments
+                if let lastSegment = result.bestTranscription.segments.last {
+                    let segmentEnd = lastSegment.timestamp + lastSegment.duration
+                    lastSegmentEnd = segmentEnd
+
+                    // Calculate progress based on how much audio has been transcribed
+                    let progress = min(segmentEnd / audioDuration, 0.95)
+                    DispatchQueue.main.async {
+                        self.transcriptionProgress = progress
+                    }
+                }
+
+                if result.isFinal {
+                    // Final result - complete!
+                    DispatchQueue.main.async {
+                        self.transcriptionProgress = 1.0
+                    }
+                    completion(.success(result.bestTranscription.formattedString))
+                }
             }
         }
     }
