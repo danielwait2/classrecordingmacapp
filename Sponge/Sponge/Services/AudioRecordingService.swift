@@ -58,11 +58,13 @@ class AudioRecordingService: NSObject, ObservableObject {
     func startRecording() -> URL? {
         let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
         let recordingsPath = documentsPath.appendingPathComponent("Recordings")
-        let fileName = "recording_\(Date().timeIntervalSince1970).m4a"
-        let fileURL = recordingsPath.appendingPathComponent(fileName)
 
         #if os(macOS)
-        // On macOS, use SharedAudioManager to avoid conflicts with transcription's AVAudioEngine
+        // On macOS, use .caf format (Core Audio Format) which supports native PCM from AVAudioEngine
+        let fileName = "recording_\(Date().timeIntervalSince1970).caf"
+        let fileURL = recordingsPath.appendingPathComponent(fileName)
+
+        // Use SharedAudioManager to avoid conflicts with transcription's AVAudioEngine
         do {
             try SharedAudioManager.shared.startAudioEngine(recordingToURL: fileURL)
 
@@ -78,6 +80,8 @@ class AudioRecordingService: NSObject, ObservableObject {
             return nil
         }
         #else
+        let fileName = "recording_\(Date().timeIntervalSince1970).m4a"
+        let fileURL = recordingsPath.appendingPathComponent(fileName)
         // iOS uses AVAudioRecorder which works alongside AVAudioEngine
         // High-quality settings matching Apple Voice Memos exactly
         let settings: [String: Any] = [

@@ -29,7 +29,7 @@ class SharedAudioManager {
     /// Starts the shared audio engine and optionally begins recording to file
     func startAudioEngine(recordingToURL url: URL?) throws {
         // Stop any existing engine
-        stopAudioEngine()
+        _ = stopAudioEngine()
 
         audioEngine = AVAudioEngine()
         guard let audioEngine = audioEngine else {
@@ -40,18 +40,16 @@ class SharedAudioManager {
         let inputNode = audioEngine.inputNode
         let inputFormat = inputNode.outputFormat(forBus: 0)
 
-        // If recording, create the audio file
-        if let url = url {
-            // Create recording format (AAC)
-            let recordingSettings: [String: Any] = [
-                AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
-                AVSampleRateKey: inputFormat.sampleRate,
-                AVNumberOfChannelsKey: inputFormat.channelCount,
-                AVEncoderAudioQualityKey: AVAudioQuality.max.rawValue,
-                AVEncoderBitRateKey: 256000
-            ]
+        // Validate input format
+        guard inputFormat.sampleRate > 0 && inputFormat.channelCount > 0 else {
+            throw NSError(domain: "SharedAudioManager", code: -2,
+                         userInfo: [NSLocalizedDescriptionKey: "Invalid input format - no microphone available"])
+        }
 
-            audioFile = try AVAudioFile(forWriting: url, settings: recordingSettings)
+        // If recording, create the audio file with the native input format
+        if let url = url {
+            // Use the input format directly for the file (PCM/CAF format works reliably)
+            audioFile = try AVAudioFile(forWriting: url, settings: inputFormat.settings)
             recordingURL = url
             isRecording = true
         }
@@ -75,6 +73,8 @@ class SharedAudioManager {
 
         audioEngine.prepare()
         try audioEngine.start()
+
+        print("SharedAudioManager: Audio engine started successfully")
     }
 
     /// Pauses audio capture (for pause recording functionality)
@@ -88,6 +88,7 @@ class SharedAudioManager {
     }
 
     /// Stops the audio engine and finalizes any recording
+    @discardableResult
     func stopAudioEngine() -> URL? {
         audioEngine?.stop()
         audioEngine?.inputNode.removeTap(onBus: 0)
