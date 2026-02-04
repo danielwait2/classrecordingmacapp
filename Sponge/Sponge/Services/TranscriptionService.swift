@@ -5,7 +5,6 @@ import AVFoundation
 class TranscriptionService: ObservableObject {
     @Published var transcribedText: String = ""
     @Published var isTranscribing: Bool = false
-    @Published var transcriptionProgress: Double = 0.0 // 0.0 to 1.0
     @Published var error: String?
 
     // iOS 26+ SpeechAnalyzer for Voice Memos-level quality (stored as Any to avoid @available on stored properties)
@@ -52,7 +51,6 @@ class TranscriptionService: ObservableObject {
         analyzer.$transcribedText.assign(to: &$transcribedText)
         analyzer.$isTranscribing.assign(to: &$isTranscribing)
         analyzer.$error.assign(to: &$error)
-        analyzer.$transcriptionProgress.assign(to: &$transcriptionProgress)
     }
 
     func requestPermission(completion: @escaping (Bool) -> Void) {
@@ -401,106 +399,5 @@ class TranscriptionService: ObservableObject {
     private func resetModern() {
         guard let analyzer = modernAnalyzer as? SpeechAnalyzerService else { return }
         analyzer.reset()
-    }
-
-    // MARK: - Post-Recording Transcription (Voice Memos Style)
-
-    /// Transcribes an audio file after recording is complete
-    /// This provides MUCH better accuracy than real-time transcription
-    /// Matches Apple Voice Memos transcription quality
-    func transcribeAudioFile(at url: URL, completion: @escaping (Result<String, Error>) -> Void) {
-        // Use modern API if available (Voice Memos quality)
-        if #available(iOS 26.0, macOS 26.0, *), modernAnalyzer != nil {
-            transcribeAudioFileModern(at: url, completion: completion)
-            return
-        }
-
-        // Fallback to legacy implementation
-        transcribeAudioFileLegacy(at: url, completion: completion)
-    }
-
-    @available(iOS 26.0, macOS 26.0, *)
-    private func transcribeAudioFileModern(at url: URL, completion: @escaping (Result<String, Error>) -> Void) {
-        guard let analyzer = modernAnalyzer as? SpeechAnalyzerService else {
-            completion(.failure(NSError(domain: "TranscriptionService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Modern analyzer not available"])))
-            return
-        }
-        analyzer.transcribeAudioFile(at: url, completion: completion)
-    }
-
-    private func transcribeAudioFileLegacy(at url: URL, completion: @escaping (Result<String, Error>) -> Void) {
-        guard let recognizer = speechRecognizer, recognizer.isAvailable else {
-            completion(.failure(NSError(domain: "TranscriptionService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Speech recognizer is not available"])))
-            return
-        }
-
-        // Reset progress
-        DispatchQueue.main.async {
-            self.transcriptionProgress = 0.0
-        }
-
-        let request = SFSpeechURLRecognitionRequest(url: url)
-        request.shouldReportPartialResults = true // Enable to track progress
-
-        // Apply Voice Memos-level quality settings
-        if #available(macOS 13, iOS 16, *) {
-            request.addsPunctuation = true
-            request.requiresOnDeviceRecognition = false // Use server for maximum accuracy
-        }
-
-        // Dictation mode for best results
-        request.taskHint = .dictation
-
-        // Enable all available quality improvements
-        if #available(macOS 14, iOS 17, *) {
-            request.contextualStrings = []
-        }
-
-        // Get audio duration for progress calculation
-        var audioDuration: Double = 0
-        do {
-            let audioFile = try AVAudioFile(forReading: url)
-            audioDuration = Double(audioFile.length) / audioFile.processingFormat.sampleRate
-        } catch {
-            // If we can't get duration, use a default estimate
-            audioDuration = 60.0
-        }
-
-        // Track partial results to estimate progress based on transcription timing
-        var lastSegmentEnd: Double = 0
-
-        recognizer.recognitionTask(with: request) { [weak self] result, error in
-            guard let self = self else { return }
-
-            if let error = error {
-                DispatchQueue.main.async {
-                    self.transcriptionProgress = 0.0
-                }
-                completion(.failure(error))
-                return
-            }
-
-            if let result = result {
-                // Calculate progress based on transcription segments
-                if let lastSegment = result.bestTranscription.segments.last {
-                    let segmentEnd = lastSegment.timestamp + lastSegment.duration
-                    lastSegmentEnd = segmentEnd
-
-                    // Calculate progress based on how much audio has been transcribed
-                    let progress = min(segmentEnd / audioDuration, 0.95)
-                    DispatchQueue.main.async {
-                        self.transcriptionProgress = progress
-                    }
-                }
-
-                if result.isFinal {
-                    // Final result - complete!
-                    DispatchQueue.main.async {
-                        self.transcriptionProgress = 1.0
-                    }
-                    completion(.success(result.bestTranscription.formattedString))
-                }
-            }
-        }
     }
 }

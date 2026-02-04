@@ -14,7 +14,6 @@ class SpeechAnalyzerService: ObservableObject {
     @Published var transcribedText: String = ""
     @Published var isTranscribing: Bool = false
     @Published var error: String?
-    @Published var transcriptionProgress: Double = 0.0
 
     private var analyzer: SpeechAnalyzer?
     private var transcriber: SpeechTranscriber?
@@ -244,77 +243,6 @@ class SpeechAnalyzerService: ObservableObject {
             self.baseTranscript = ""
             self.lastResultLength = 0
             self.error = nil
-        }
-    }
-
-    // MARK: - Post-Recording Transcription
-
-    /// Transcribes an audio file with Voice Memos-level quality
-    func transcribeAudioFile(at url: URL, completion: @escaping (Result<String, Error>) -> Void) {
-        Task {
-            do {
-                // Reset progress
-                await MainActor.run {
-                    self.transcriptionProgress = 0.0
-                }
-
-                // Load audio file
-                let audioFile = try AVAudioFile(forReading: url)
-
-                // Create transcriber for file transcription
-                let fileTranscriber = SpeechTranscriber(
-                    locale: Locale.current,
-                    preset: .transcription
-                )
-
-                // Create analyzer with modules only (no input yet)
-                let fileAnalyzer = SpeechAnalyzer(
-                    modules: [fileTranscriber]
-                )
-
-                // Collect results
-                var finalText = ""
-                let resultsTask = Task {
-                    do {
-                        for try await result in fileTranscriber.results {
-                            let text = String(result.text.characters)
-                            finalText = text
-
-                            // Update progress
-                            await MainActor.run {
-                                if self.transcriptionProgress < 0.9 {
-                                    self.transcriptionProgress += 0.1
-                                }
-                            }
-                        }
-                    } catch {
-                        print("File transcription result error: \(error)")
-                    }
-                }
-
-                // Prepare analyzer with file format
-                try await fileAnalyzer.prepareToAnalyze(in: audioFile.processingFormat)
-
-                // Analyze the sequence from file - this processes the entire file
-                _ = try await fileAnalyzer.analyzeSequence(from: audioFile)
-
-                // Wait for all results
-                await resultsTask.value
-
-                // Complete
-                await MainActor.run {
-                    self.transcriptionProgress = 1.0
-                }
-
-                completion(.success(finalText))
-
-            } catch {
-                print("File transcription error: \(error)")
-                await MainActor.run {
-                    self.transcriptionProgress = 0.0
-                }
-                completion(.failure(error))
-            }
         }
     }
 }

@@ -12,7 +12,6 @@ class RecordingViewModel: ObservableObject {
     @Published var toastMessage: ToastMessage?
     @Published var isExporting: Bool = false
     @Published var isGeneratingNotes: Bool = false
-    @Published var isTranscribing: Bool = false
 
     let audioService = AudioRecordingService()
     let transcriptionService = TranscriptionService()
@@ -142,54 +141,17 @@ class RecordingViewModel: ObservableObject {
 
         let recordingDate = Date()
         let audioURL = result.url
+        let finalTranscript = transcribedText // Use live transcript directly
 
-        // If post-recording transcription, transcribe the audio file now
-        if !realtimeTranscription {
-            DispatchQueue.main.async {
-                self.isTranscribing = true
-            }
-
-            transcriptionService.transcribeAudioFile(at: audioURL) { [weak self] transcriptionResult in
-                guard let self = self else { return }
-
-                DispatchQueue.main.async {
-                    self.isTranscribing = false
-                }
-
-                let finalTranscript: String
-                switch transcriptionResult {
-                case .success(let text):
-                    finalTranscript = text
-                case .failure(let error):
-                    DispatchQueue.main.async {
-                        self.errorMessage = "Transcription failed: \(error.localizedDescription)"
-                    }
-                    finalTranscript = ""
-                }
-
-                self.processRecording(
-                    classId: classModel.id,
-                    date: recordingDate,
-                    duration: result.duration,
-                    audioFileName: audioURL.lastPathComponent,
-                    transcript: finalTranscript,
-                    classModel: classModel,
-                    classViewModel: classViewModel
-                )
-            }
-        } else {
-            // Real-time transcription - use captured text
-            let finalTranscript = transcribedText
-            processRecording(
-                classId: classModel.id,
-                date: recordingDate,
-                duration: result.duration,
-                audioFileName: audioURL.lastPathComponent,
-                transcript: finalTranscript,
-                classModel: classModel,
-                classViewModel: classViewModel
-            )
-        }
+        processRecording(
+            classId: classModel.id,
+            date: recordingDate,
+            duration: result.duration,
+            audioFileName: audioURL.lastPathComponent,
+            transcript: finalTranscript,
+            classModel: classModel,
+            classViewModel: classViewModel
+        )
 
         reset()
     }

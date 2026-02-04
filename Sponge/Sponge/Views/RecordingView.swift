@@ -22,43 +22,10 @@ struct RecordingView: View {
             Spacer(minLength: 20)
         }
         .padding(.horizontal, 24)
-        .overlay {
-            if recordingViewModel.isTranscribing {
-                transcribingOverlay
-            }
-        }
         .alert("Permissions Required", isPresented: $showingPermissionAlert) {
             Button("OK", role: .cancel) { }
         } message: {
             Text("Please enable microphone and speech recognition permissions in System Settings.")
-        }
-    }
-
-    // MARK: - Transcribing Overlay
-
-    private var transcribingOverlay: some View {
-        ZStack {
-            Color.black.opacity(0.4)
-                .ignoresSafeArea()
-
-            VStack(spacing: 16) {
-                ProgressView()
-                    .scaleEffect(1.5)
-                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
-
-                Text("Transcribing recording...")
-                    .font(.headline)
-                    .foregroundColor(.white)
-
-                Text("This may take a moment")
-                    .font(.subheadline)
-                    .foregroundColor(.white.opacity(0.8))
-            }
-            .padding(32)
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(white: 0.15))
-            )
         }
     }
 
@@ -119,7 +86,7 @@ struct RecordingView: View {
                     .frame(width: 8, height: 8)
                     .modifier(PulsingModifier(isActive: !recordingViewModel.isPaused))
 
-                Text(recordingViewModel.isTranscribing ? "Transcribing..." : recordingViewModel.isPaused ? "Paused" : "Live Transcription")
+                Text(recordingViewModel.isPaused ? "Paused" : "Live Transcription")
                     .font(.subheadline.weight(.medium))
                     .foregroundColor(.secondary)
 
@@ -198,14 +165,13 @@ struct RecordingView: View {
                 }
             }
         }
-        .frame(minHeight: 160, idealHeight: showFullTranscript ? 320 : 180, maxHeight: showFullTranscript ? .infinity : 220)
-        .background(Color.white)
-        .cornerRadius(SpongeTheme.cornerRadiusM)
+        .frame(height: showFullTranscript ? 280 : 140)
+        .background(Color.secondaryBackground)
+        .cornerRadius(12)
         .overlay(
-            RoundedRectangle(cornerRadius: SpongeTheme.cornerRadiusM)
-                .stroke(recordingViewModel.isPaused ? SpongeTheme.coral.opacity(0.3) : SpongeTheme.coral, lineWidth: 2)
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(recordingViewModel.isPaused ? Color.clear : Color.red.opacity(0.3), lineWidth: 1.5)
         )
-        .shadow(color: SpongeTheme.shadowS, radius: 2, x: 0, y: 1)
     }
 
     // MARK: - Recording Controls
