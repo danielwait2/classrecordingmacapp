@@ -256,7 +256,8 @@ struct RecordingRowView: View {
             return
         }
 
-        let pdfFileName = "\(recording.name).pdf"
+        // Generate PDF filename matching the format used in RecordingViewModel.generateFileName
+        let pdfFileName = generatePDFFileName(className: classModel.name, date: recording.date)
         var pdfURL: URL?
 
         // Check save destination
@@ -283,6 +284,21 @@ struct RecordingRowView: View {
             UIApplication.shared.open(documentsURL)
             #endif
         }
+    }
+
+    /// Generates PDF filename matching RecordingViewModel.generateFileName format
+    private func generatePDFFileName(className: String, date: Date) -> String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        let datePart = dateFormatter.string(from: date)
+
+        let timeFormatter = DateFormatter()
+        timeFormatter.dateFormat = "h-mma"
+        timeFormatter.amSymbol = "am"
+        timeFormatter.pmSymbol = "pm"
+        let timePart = timeFormatter.string(from: date)
+
+        return "\(className)_\(datePart)_\(timePart).pdf"
     }
 }
 

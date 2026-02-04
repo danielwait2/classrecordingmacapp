@@ -7,6 +7,7 @@
 - Visible "Show in Finder" button for exported PDFs
 
 ### Fixed
+- "Show in Finder" button now correctly locates PDF files (filename format mismatch)
 - Live transcription word counter no longer resets every few seconds
 - Words no longer disappear during live transcription
 - Fixed race condition in legacy mode restart (captures baseTranscript before task cancellation)
