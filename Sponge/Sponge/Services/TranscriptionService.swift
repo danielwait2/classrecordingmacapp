@@ -14,7 +14,7 @@ class TranscriptionService: ObservableObject {
     private var speechRecognizer: SFSpeechRecognizer?
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
-    private var audioEngine: AVAudioEngine?
+    private var audioEngine: AVAudioEngine? // Only used on iOS
     private var isStoppingIntentionally = false
 
     private var restartTimer: Timer?
@@ -97,9 +97,6 @@ class TranscriptionService: ObservableObject {
         }
 
         do {
-            audioEngine = AVAudioEngine()
-            guard let audioEngine = audioEngine else { return }
-
             recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
             guard let recognitionRequest = recognitionRequest else {
                 error = "Unable to create recognition request"
@@ -122,17 +119,20 @@ class TranscriptionService: ObservableObject {
                 recognitionRequest.contextualStrings = [] // Better uncommon word recognition
             }
 
-            // Request highest quality results
-            if #available(macOS 15, iOS 18, *) {
-                // Future: Additional quality improvements
+            #if os(macOS)
+            // On macOS, use SharedAudioManager to receive audio buffers
+            // The AudioRecordingService starts the SharedAudioManager, we just hook into it
+            SharedAudioManager.shared.transcriptionBufferHandler = { [weak self] buffer in
+                self?.recognitionRequest?.append(buffer)
             }
+            #else
+            // On iOS, create our own audio engine (works alongside AVAudioRecorder)
+            audioEngine = AVAudioEngine()
+            guard let audioEngine = audioEngine else { return }
 
-            #if os(iOS)
             let audioSession = AVAudioSession.sharedInstance()
-            // Use voiceChat mode for automatic gain control and echo cancellation
             try audioSession.setCategory(.playAndRecord, mode: .voiceChat, options: [.defaultToSpeaker, .allowBluetooth])
             try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
-            #endif
 
             let inputNode = audioEngine.inputNode
             let recordingFormat = inputNode.outputFormat(forBus: 0)
@@ -140,15 +140,14 @@ class TranscriptionService: ObservableObject {
             // Remove any existing tap
             inputNode.removeTap(onBus: 0)
 
-            // Larger buffer size matching Voice Memos approach (8192 samples = ~170ms at 48kHz)
-            // This provides better quality transcription with less processing overhead
-            // Voice Memos likely uses even larger buffers since it processes post-recording
+            // Larger buffer size matching Voice Memos approach
             inputNode.installTap(onBus: 0, bufferSize: 8192, format: recordingFormat) { [weak self] buffer, _ in
                 self?.recognitionRequest?.append(buffer)
             }
 
             audioEngine.prepare()
             try audioEngine.start()
+            #endif
 
             recognitionTask = recognizer.recognitionTask(with: recognitionRequest) { [weak self] result, error in
                 guard let self = self else { return }
@@ -216,7 +215,10 @@ class TranscriptionService: ObservableObject {
             pauseTranscribingModern()
             return
         }
+        #if os(iOS)
         audioEngine?.pause()
+        #endif
+        // On macOS, SharedAudioManager handles pause via AudioRecordingService
     }
 
     @available(iOS 26.0, macOS 26.0, *)
@@ -230,7 +232,10 @@ class TranscriptionService: ObservableObject {
             resumeTranscribingModern()
             return
         }
+        #if os(iOS)
         try? audioEngine?.start()
+        #endif
+        // On macOS, SharedAudioManager handles resume via AudioRecordingService
     }
 
     @available(iOS 26.0, macOS 26.0, *)
@@ -248,6 +253,11 @@ class TranscriptionService: ObservableObject {
         isStoppingIntentionally = true
         restartTimer?.invalidate()
         restartTimer = nil
+
+        #if os(macOS)
+        // Clear the buffer handler
+        SharedAudioManager.shared.transcriptionBufferHandler = nil
+        #endif
 
         // End audio first to let recognition finish processing
         recognitionRequest?.endAudio()
@@ -312,7 +322,14 @@ class TranscriptionService: ObservableObject {
                     recognitionRequest.contextualStrings = []
                 }
 
-                // Continue using existing audio engine tap
+                #if os(macOS)
+                // Re-attach to SharedAudioManager
+                SharedAudioManager.shared.transcriptionBufferHandler = { [weak self] buffer in
+                    self?.recognitionRequest?.append(buffer)
+                }
+                #endif
+
+                // Continue using existing audio engine tap (iOS) or SharedAudioManager (macOS)
                 guard let recognizer = self.speechRecognizer else { return }
 
                 // Capture baseTranscript at task creation time to avoid race conditions
@@ -375,9 +392,14 @@ class TranscriptionService: ObservableObject {
     }
 
     private func cleanupAudioEngine() {
+        #if os(iOS)
         audioEngine?.stop()
         audioEngine?.inputNode.removeTap(onBus: 0)
         audioEngine = nil
+        #else
+        // On macOS, just clear the handler - SharedAudioManager manages the engine
+        SharedAudioManager.shared.transcriptionBufferHandler = nil
+        #endif
     }
 
     func reset() {

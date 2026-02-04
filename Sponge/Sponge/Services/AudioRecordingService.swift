@@ -61,22 +61,42 @@ class AudioRecordingService: NSObject, ObservableObject {
         let fileName = "recording_\(Date().timeIntervalSince1970).m4a"
         let fileURL = recordingsPath.appendingPathComponent(fileName)
 
+        #if os(macOS)
+        // On macOS, use SharedAudioManager to avoid conflicts with transcription's AVAudioEngine
+        do {
+            try SharedAudioManager.shared.startAudioEngine(recordingToURL: fileURL)
+
+            currentFileURL = fileURL
+            recordingState = .recording
+            recordingStartTime = Date()
+            pausedDuration = 0
+            startTimer()
+
+            return fileURL
+        } catch {
+            print("Failed to start recording with SharedAudioManager: \(error)")
+            return nil
+        }
+        #else
+        // iOS uses AVAudioRecorder which works alongside AVAudioEngine
+        // High-quality settings matching Apple Voice Memos exactly
         let settings: [String: Any] = [
             AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
-            AVSampleRateKey: 44100,
-            AVNumberOfChannelsKey: 1,
-            AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
+            AVSampleRateKey: 48000.0,
+            AVNumberOfChannelsKey: 2,
+            AVEncoderAudioQualityKey: AVAudioQuality.max.rawValue,
+            AVEncoderBitRateKey: 256000,
+            AVLinearPCMBitDepthKey: 16
         ]
 
         do {
-            #if os(iOS)
             let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker])
+            try session.setCategory(.playAndRecord, mode: .voiceChat, options: [.defaultToSpeaker, .allowBluetooth])
             try session.setActive(true)
-            #endif
 
             audioRecorder = try AVAudioRecorder(url: fileURL, settings: settings)
             audioRecorder?.delegate = self
+            audioRecorder?.isMeteringEnabled = true
             audioRecorder?.record()
 
             currentFileURL = fileURL
@@ -90,12 +110,18 @@ class AudioRecordingService: NSObject, ObservableObject {
             print("Failed to start recording: \(error)")
             return nil
         }
+        #endif
     }
 
     func pauseRecording() {
         guard recordingState == .recording else { return }
 
+        #if os(macOS)
+        SharedAudioManager.shared.pauseAudioEngine()
+        #else
         audioRecorder?.pause()
+        #endif
+
         recordingState = .paused
         stopTimer()
 
@@ -107,13 +133,32 @@ class AudioRecordingService: NSObject, ObservableObject {
     func resumeRecording() {
         guard recordingState == .paused else { return }
 
+        #if os(macOS)
+        try? SharedAudioManager.shared.resumeAudioEngine()
+        #else
         audioRecorder?.record()
+        #endif
+
         recordingState = .recording
         recordingStartTime = Date()
         startTimer()
     }
 
     func stopRecording() -> (url: URL, duration: TimeInterval)? {
+        #if os(macOS)
+        guard let fileURL = SharedAudioManager.shared.stopAudioEngine() ?? currentFileURL else { return nil }
+
+        stopTimer()
+        let finalDuration = currentDuration
+
+        recordingState = .idle
+        currentDuration = 0
+        pausedDuration = 0
+        recordingStartTime = nil
+        currentFileURL = nil
+
+        return (fileURL, finalDuration)
+        #else
         guard let recorder = audioRecorder, let fileURL = currentFileURL else { return nil }
 
         recorder.stop()
@@ -121,9 +166,7 @@ class AudioRecordingService: NSObject, ObservableObject {
 
         let finalDuration = currentDuration
 
-        #if os(iOS)
         try? AVAudioSession.sharedInstance().setActive(false)
-        #endif
 
         recordingState = .idle
         currentDuration = 0
@@ -134,6 +177,7 @@ class AudioRecordingService: NSObject, ObservableObject {
         currentFileURL = nil
 
         return (fileURL, finalDuration)
+        #endif
     }
 
     private func startTimer() {

@@ -5,8 +5,10 @@
 ### Added
 - Visible delete button on each recording row (with confirmation dialog)
 - Visible "Show in Finder" button for exported PDFs
+- SharedAudioManager for macOS to coordinate audio between recording and transcription
 
 ### Fixed
+- Microphone spasming/flickering when running app outside Xcode debug environment on macOS (audio conflict between AVAudioRecorder and AVAudioEngine)
 - "Show in Finder" button now correctly locates PDF files (filename format mismatch)
 - Live transcription word counter no longer resets every few seconds
 - Words no longer disappear during live transcription
