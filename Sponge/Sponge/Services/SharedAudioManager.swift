@@ -21,6 +21,7 @@ class SharedAudioManager {
     private var isRecording = false
     private var recordingURL: URL?
     private var outputFormat: AVAudioFormat?
+    private var audioConverter: AVAudioConverter?
 
     // Callbacks for transcription service to receive audio buffers
     var transcriptionBufferHandler: ((AVAudioPCMBuffer) -> Void)?
@@ -53,59 +54,79 @@ class SharedAudioManager {
         if let url = url {
             print("SharedAudioManager: Creating audio file at \(url.path)")
             print("SharedAudioManager: Input format details - sampleRate: \(inputFormat.sampleRate), channels: \(inputFormat.channelCount), commonFormat: \(inputFormat.commonFormat.rawValue), interleaved: \(inputFormat.isInterleaved)")
-            print("SharedAudioManager: Input format settings: \(inputFormat.settings)")
 
-            // Use the input format's processing format for the file
-            outputFormat = inputFormat
-
-            // Determine bit depth based on common format
-            let bitDepth: Int
-            let isFloat: Bool
-            switch inputFormat.commonFormat {
-            case .pcmFormatFloat32:
-                bitDepth = 32
-                isFloat = true
-            case .pcmFormatFloat64:
-                bitDepth = 64
-                isFloat = true
-            case .pcmFormatInt16:
-                bitDepth = 16
-                isFloat = false
-            case .pcmFormatInt32:
-                bitDepth = 32
-                isFloat = false
-            default:
-                bitDepth = 32
-                isFloat = true
-            }
-
-            // Build settings explicitly from the input format properties
+            // Use M4A/AAC format which works better with sandboxed apps
+            // This avoids the HAL proxy issues with PCM recording
             let fileSettings: [String: Any] = [
-                AVFormatIDKey: Int(kAudioFormatLinearPCM),
-                AVSampleRateKey: inputFormat.sampleRate,
-                AVNumberOfChannelsKey: Int(inputFormat.channelCount),
-                AVLinearPCMBitDepthKey: bitDepth,
-                AVLinearPCMIsFloatKey: isFloat,
-                AVLinearPCMIsBigEndianKey: false,
-                AVLinearPCMIsNonInterleaved: !inputFormat.isInterleaved
+                AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
+                AVSampleRateKey: 44100.0,
+                AVNumberOfChannelsKey: 1,
+                AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue,
+                AVEncoderBitRateKey: 128000
             ]
 
             print("SharedAudioManager: File settings: \(fileSettings)")
 
-            audioFile = try AVAudioFile(forWriting: url, settings: fileSettings)
+            // Create a processing format for writing - must be PCM for the tap
+            guard let processingFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 44100, channels: 1, interleaved: false) else {
+                throw NSError(domain: "SharedAudioManager", code: -3,
+                             userInfo: [NSLocalizedDescriptionKey: "Failed to create processing format"])
+            }
+
+            outputFormat = processingFormat
+
+            // Create converter from input format to processing format
+            if inputFormat.sampleRate != processingFormat.sampleRate || inputFormat.channelCount != processingFormat.channelCount {
+                audioConverter = AVAudioConverter(from: inputFormat, to: processingFormat)
+                print("SharedAudioManager: Created audio converter")
+            }
+
+            audioFile = try AVAudioFile(forWriting: url, settings: fileSettings, commonFormat: .pcmFormatFloat32, interleaved: false)
             recordingURL = url
             isRecording = true
             print("SharedAudioManager: Audio file created successfully")
         }
+
+        // Capture values for closure
+        let inputSampleRate = inputFormat.sampleRate
 
         // Install tap that handles both recording and transcription
         inputNode.installTap(onBus: 0, bufferSize: 8192, format: inputFormat) { [weak self] buffer, _ in
             guard let self = self else { return }
 
             // Write to file if recording
-            if self.isRecording, let audioFile = self.audioFile {
+            if self.isRecording, let audioFile = self.audioFile, let outFormat = self.outputFormat {
                 do {
-                    try audioFile.write(from: buffer)
+                    // Convert buffer if necessary
+                    if let converter = self.audioConverter {
+                        let ratio = outFormat.sampleRate / inputSampleRate
+                        let frameCount = AVAudioFrameCount(Double(buffer.frameLength) * ratio)
+                        guard frameCount > 0,
+                              let convertedBuffer = AVAudioPCMBuffer(pcmFormat: outFormat, frameCapacity: frameCount) else { return }
+
+                        var error: NSError?
+                        var hasData = true
+                        let inputBlock: AVAudioConverterInputBlock = { _, outStatus in
+                            if hasData {
+                                hasData = false
+                                outStatus.pointee = .haveData
+                                return buffer
+                            } else {
+                                outStatus.pointee = .noDataNow
+                                return nil
+                            }
+                        }
+
+                        converter.convert(to: convertedBuffer, error: &error, withInputFrom: inputBlock)
+
+                        if let error = error {
+                            print("SharedAudioManager: Conversion error: \(error)")
+                        } else if convertedBuffer.frameLength > 0 {
+                            try audioFile.write(from: convertedBuffer)
+                        }
+                    } else {
+                        try audioFile.write(from: buffer)
+                    }
                 } catch {
                     print("SharedAudioManager: Error writing to file: \(error)")
                 }
@@ -143,6 +164,7 @@ class SharedAudioManager {
         recordingURL = nil
         isRecording = false
         outputFormat = nil
+        audioConverter = nil
 
         return url
     }

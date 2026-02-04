@@ -61,8 +61,8 @@ class AudioRecordingService: NSObject, ObservableObject {
         let recordingsPath = documentsPath.appendingPathComponent("Recordings")
 
         #if os(macOS)
-        // On macOS, use .caf format (Core Audio Format) which supports Float32 PCM natively
-        let fileName = "recording_\(Date().timeIntervalSince1970).caf"
+        // On macOS, use .m4a format (AAC) which works better with sandboxed apps
+        let fileName = "recording_\(Date().timeIntervalSince1970).m4a"
         let fileURL = recordingsPath.appendingPathComponent(fileName)
 
         print("AudioRecordingService: Attempting to start recording to \(fileURL.path)")
