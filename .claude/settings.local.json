@@ -11,7 +11,14 @@
       "Bash(tccutil reset:*)",
       "Bash(echo:*)",
       "Bash(xcodebuild:*)",
-      "Bash(xcrun simctl:*)"
+      "Bash(xcrun simctl:*)",
+      "Bash(codesign:*)",
+      "Bash(sips:*)",
+      "Bash(open:*)",
+      "Bash(screencapture:*)",
+      "Bash(find:*)",
+      "Bash(defaults read:*)",
+      "Bash(plutil:*)"
     ]
   }
 }
