@@ -40,18 +40,32 @@ class SharedAudioManager {
         let inputNode = audioEngine.inputNode
         let inputFormat = inputNode.outputFormat(forBus: 0)
 
+        print("SharedAudioManager: Input format - sampleRate: \(inputFormat.sampleRate), channels: \(inputFormat.channelCount)")
+
         // Validate input format
         guard inputFormat.sampleRate > 0 && inputFormat.channelCount > 0 else {
             throw NSError(domain: "SharedAudioManager", code: -2,
-                         userInfo: [NSLocalizedDescriptionKey: "Invalid input format - no microphone available"])
+                         userInfo: [NSLocalizedDescriptionKey: "Invalid input format - sampleRate: \(inputFormat.sampleRate), channels: \(inputFormat.channelCount)"])
         }
 
-        // If recording, create the audio file with the native input format
+        // If recording, create the audio file with explicit PCM settings
         if let url = url {
-            // Use the input format directly for the file (PCM/CAF format works reliably)
-            audioFile = try AVAudioFile(forWriting: url, settings: inputFormat.settings)
+            // Create explicit PCM settings for CAF file
+            let audioSettings: [String: Any] = [
+                AVFormatIDKey: kAudioFormatLinearPCM,
+                AVSampleRateKey: inputFormat.sampleRate,
+                AVNumberOfChannelsKey: inputFormat.channelCount,
+                AVLinearPCMBitDepthKey: 32,
+                AVLinearPCMIsFloatKey: true,
+                AVLinearPCMIsBigEndianKey: false,
+                AVLinearPCMIsNonInterleaved: false
+            ]
+
+            print("SharedAudioManager: Creating audio file at \(url.path)")
+            audioFile = try AVAudioFile(forWriting: url, settings: audioSettings)
             recordingURL = url
             isRecording = true
+            print("SharedAudioManager: Audio file created successfully")
         }
 
         // Install tap that handles both recording and transcription

@@ -89,7 +89,7 @@ class RecordingViewModel: ObservableObject {
 
         guard let audioURL = audioService.startRecording() else {
             DispatchQueue.main.async {
-                self.errorMessage = "Failed to start recording"
+                self.errorMessage = self.audioService.lastError ?? "Failed to start recording"
             }
             return
         }

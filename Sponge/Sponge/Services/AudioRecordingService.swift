@@ -10,6 +10,7 @@ enum RecordingState {
 class AudioRecordingService: NSObject, ObservableObject {
     @Published var recordingState: RecordingState = .idle
     @Published var currentDuration: TimeInterval = 0
+    @Published var lastError: String?
 
     private var audioRecorder: AVAudioRecorder?
     private var timer: Timer?
@@ -64,6 +65,8 @@ class AudioRecordingService: NSObject, ObservableObject {
         let fileName = "recording_\(Date().timeIntervalSince1970).caf"
         let fileURL = recordingsPath.appendingPathComponent(fileName)
 
+        print("AudioRecordingService: Attempting to start recording to \(fileURL.path)")
+
         // Use SharedAudioManager to avoid conflicts with transcription's AVAudioEngine
         do {
             try SharedAudioManager.shared.startAudioEngine(recordingToURL: fileURL)
@@ -74,9 +77,12 @@ class AudioRecordingService: NSObject, ObservableObject {
             pausedDuration = 0
             startTimer()
 
+            print("AudioRecordingService: Recording started successfully")
             return fileURL
         } catch {
-            print("Failed to start recording with SharedAudioManager: \(error)")
+            let errorMessage = "Failed to start recording: \(error.localizedDescription)"
+            print("AudioRecordingService: \(errorMessage)")
+            lastError = errorMessage
             return nil
         }
         #else
