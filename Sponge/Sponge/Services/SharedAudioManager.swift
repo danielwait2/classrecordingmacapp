@@ -54,8 +54,8 @@ class SharedAudioManager {
         if let url = url {
             print("SharedAudioManager: Creating audio file at \(url.path)")
 
-            // Create a standard output format that AVAudioFile will accept
-            // Use 44.1kHz mono 16-bit PCM which is widely compatible
+            // Create a standard output format: 44.1kHz mono Float32
+            // This format works reliably with AVAudioFile and AVAudioConverter
             guard let standardFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 44100, channels: 1, interleaved: false) else {
                 throw NSError(domain: "SharedAudioManager", code: -3,
                              userInfo: [NSLocalizedDescriptionKey: "Failed to create standard audio format"])
@@ -64,26 +64,17 @@ class SharedAudioManager {
             outputFormat = standardFormat
 
             // Create converter if input format differs from output format
-            if inputFormat.sampleRate != standardFormat.sampleRate || inputFormat.channelCount != standardFormat.channelCount {
+            if inputFormat.sampleRate != standardFormat.sampleRate || inputFormat.channelCount != standardFormat.channelCount || inputFormat.commonFormat != standardFormat.commonFormat {
                 audioConverter = AVAudioConverter(from: inputFormat, to: standardFormat)
                 print("SharedAudioManager: Created audio converter from \(inputFormat.sampleRate)Hz/\(inputFormat.channelCount)ch to \(standardFormat.sampleRate)Hz/\(standardFormat.channelCount)ch")
             }
 
-            // Use standard WAV settings for the file
-            let wavSettings: [String: Any] = [
-                AVFormatIDKey: Int(kAudioFormatLinearPCM),
-                AVSampleRateKey: 44100.0,
-                AVNumberOfChannelsKey: 1,
-                AVLinearPCMBitDepthKey: 16,
-                AVLinearPCMIsFloatKey: false,
-                AVLinearPCMIsBigEndianKey: false,
-                AVLinearPCMIsNonInterleaved: false
-            ]
-
-            audioFile = try AVAudioFile(forWriting: url, settings: wavSettings)
+            // Create the audio file using the standard format directly
+            // AVAudioFile(forWriting:settings:) uses the format for both file and processing
+            audioFile = try AVAudioFile(forWriting: url, settings: standardFormat.settings)
             recordingURL = url
             isRecording = true
-            print("SharedAudioManager: Audio file created successfully with WAV format")
+            print("SharedAudioManager: Audio file created successfully")
         }
 
         // Capture input sample rate for use in tap closure
