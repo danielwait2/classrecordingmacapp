@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		8A5048D72F33E39500EE01EC /* SharedAudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A5048D62F33E39500EE01EC /* SharedAudioManager.swift */; };
 		A1000001207A0001 /* SpongeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000002207A0001 /* SpongeApp.swift */; };
 		A1000003207A0001 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000004207A0001 /* ContentView.swift */; };
 		A1000005207A0001 /* ClassModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000006207A0001 /* ClassModel.swift */; };
@@ -35,9 +36,11 @@
 		A1000044207A0009 /* DesignSystemComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000045207A0009 /* DesignSystemComponents.swift */; };
 		A1000046207A0010 /* SpongeTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000047207A0010 /* SpongeTheme.swift */; };
 		A1000050207A0001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1000048207A0011 /* Assets.xcassets */; };
+		A1CC76F5FA4216 /* SpeechAnalyzerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A19A06C48F3241 /* SpeechAnalyzerService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		8A5048D62F33E39500EE01EC /* SharedAudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedAudioManager.swift; sourceTree = "<group>"; };
 		A1000002207A0001 /* SpongeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpongeApp.swift; sourceTree = "<group>"; };
 		A1000004207A0001 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A1000006207A0001 /* ClassModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClassModel.swift; sourceTree = "<group>"; };
@@ -69,6 +72,7 @@
 		A1000045207A0009 /* DesignSystemComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystemComponents.swift; sourceTree = "<group>"; };
 		A1000047207A0010 /* SpongeTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpongeTheme.swift; sourceTree = "<group>"; };
 		A1000048207A0011 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A19A06C48F3241 /* SpeechAnalyzerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechAnalyzerService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -87,6 +91,7 @@
 			children = (
 				A1000022207A0001 /* Sponge */,
 				A1000023207A0001 /* Products */,
+				8A5048D62F33E39500EE01EC /* SharedAudioManager.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -130,6 +135,7 @@
 			children = (
 				A100000A207A0001 /* AudioRecordingService.swift */,
 				A100000C207A0001 /* TranscriptionService.swift */,
+				A19A06C48F3241 /* SpeechAnalyzerService.swift */,
 				A100000E207A0001 /* PDFExportService.swift */,
 				A1000033207A0004 /* GoogleAuthService.swift */,
 				A1000035207A0004 /* GoogleDriveService.swift */,
@@ -186,7 +192,7 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		A100001F207A0001 /* ClassTranscriber */ = {
+		A100001F207A0001 /* Sponge */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = A1000028207A0001 /* Build configuration list for PBXNativeTarget "Sponge" */;
 			buildPhases = (
@@ -231,10 +237,21 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				A100001F207A0001 /* ClassTranscriber */,
+				A100001F207A0001 /* Sponge */,
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A1000049207A0001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1000050207A0001 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		A100001E207A0001 /* Sources */ = {
@@ -248,12 +265,14 @@
 				A1000030207A0004 /* SaveDestination.swift in Sources */,
 				A1000009207A0001 /* AudioRecordingService.swift in Sources */,
 				A100000B207A0001 /* TranscriptionService.swift in Sources */,
+				A1CC76F5FA4216 /* SpeechAnalyzerService.swift in Sources */,
 				A100000D207A0001 /* PDFExportService.swift in Sources */,
 				A1000032207A0004 /* GoogleAuthService.swift in Sources */,
 				A1000034207A0004 /* GoogleDriveService.swift in Sources */,
 				A100000F207A0001 /* ClassViewModel.swift in Sources */,
 				A1000011207A0001 /* RecordingViewModel.swift in Sources */,
 				A1000013207A0001 /* RecordingView.swift in Sources */,
+				8A5048D72F33E39500EE01EC /* SharedAudioManager.swift in Sources */,
 				A1000015207A0001 /* RecordingsListView.swift in Sources */,
 				A1000017207A0001 /* ClassManagementView.swift in Sources */,
 				A1000019207A0001 /* ClassEditorView.swift in Sources */,
@@ -272,17 +291,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
-
-/* Begin PBXResourcesBuildPhase section */
-		A1000049207A0001 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				A1000050207A0001 /* Assets.xcassets in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXResourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
 		A100002B207A0001 /* Debug */ = {
