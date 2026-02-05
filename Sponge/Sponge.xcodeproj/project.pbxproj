@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		8A5048D72F33E39500EE01EC /* SharedAudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A5048D62F33E39500EE01EC /* SharedAudioManager.swift */; };
+		A1000048207A0012 /* MarkdownNotesEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000049207A0012 /* MarkdownNotesEditor.swift */; };
 		A1000001207A0001 /* SpongeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000002207A0001 /* SpongeApp.swift */; };
 		A1000003207A0001 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000004207A0001 /* ContentView.swift */; };
 		A1000005207A0001 /* ClassModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000006207A0001 /* ClassModel.swift */; };
@@ -73,6 +74,7 @@
 		A1000047207A0010 /* SpongeTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpongeTheme.swift; sourceTree = "<group>"; };
 		A1000048207A0011 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A19A06C48F3241 /* SpeechAnalyzerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechAnalyzerService.swift; sourceTree = "<group>"; };
+		A1000049207A0012 /* MarkdownNotesEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownNotesEditor.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -91,7 +93,6 @@
 			children = (
 				A1000022207A0001 /* Sponge */,
 				A1000023207A0001 /* Products */,
-				8A5048D62F33E39500EE01EC /* SharedAudioManager.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -141,6 +142,7 @@
 				A1000035207A0004 /* GoogleDriveService.swift */,
 				A100003B207A0005 /* GeminiService.swift */,
 				A1000043207A0008 /* CalendarService.swift */,
+				8A5048D62F33E39500EE01EC /* SharedAudioManager.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -185,6 +187,7 @@
 			isa = PBXGroup;
 			children = (
 				A1000045207A0009 /* DesignSystemComponents.swift */,
+				A1000049207A0012 /* MarkdownNotesEditor.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -287,6 +290,7 @@
 				A1000042207A0008 /* CalendarService.swift in Sources */,
 				A1000044207A0009 /* DesignSystemComponents.swift in Sources */,
 				A1000046207A0010 /* SpongeTheme.swift in Sources */,
+				A1000048207A0012 /* MarkdownNotesEditor.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

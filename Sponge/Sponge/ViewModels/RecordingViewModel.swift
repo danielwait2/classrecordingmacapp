@@ -12,6 +12,8 @@ class RecordingViewModel: ObservableObject {
     @Published var toastMessage: ToastMessage?
     @Published var isExporting: Bool = false
     @Published var isGeneratingNotes: Bool = false
+    @Published var userNotes: String = ""
+    @Published var userNotesTitle: String = ""
 
     let audioService = AudioRecordingService()
     let transcriptionService = TranscriptionService()
@@ -158,6 +160,13 @@ class RecordingViewModel: ObservableObject {
         let recordingDate = Date()
         let audioURL = result.url
         let finalTranscript = transcribedText // Use live transcript directly
+        // Combine title with notes if title exists
+        let finalUserNotes: String
+        if !userNotesTitle.isEmpty {
+            finalUserNotes = "# \(userNotesTitle)\n\n\(userNotes)"
+        } else {
+            finalUserNotes = userNotes
+        }
 
         processRecording(
             classId: classModel.id,
@@ -165,6 +174,7 @@ class RecordingViewModel: ObservableObject {
             duration: result.duration,
             audioFileName: audioURL.lastPathComponent,
             transcript: finalTranscript,
+            userNotes: finalUserNotes,
             classModel: classModel,
             classViewModel: classViewModel
         )
@@ -178,6 +188,7 @@ class RecordingViewModel: ObservableObject {
         duration: TimeInterval,
         audioFileName: String,
         transcript: String,
+        userNotes: String,
         classModel: ClassModel,
         classViewModel: ClassViewModel
     ) {
@@ -187,6 +198,7 @@ class RecordingViewModel: ObservableObject {
             duration: duration,
             audioFileName: audioFileName,
             transcriptText: transcript,
+            userNotes: userNotes,
             name: RecordingModel.generateDefaultName(className: classModel.name, date: date)
         )
 
@@ -210,8 +222,9 @@ class RecordingViewModel: ObservableObject {
             self.isGeneratingNotes = true
         }
 
-        // Capture the transcript to avoid referencing inout parameter in concurrent code
+        // Capture values to avoid referencing inout parameter in concurrent code
         let transcriptText = recording.transcriptText
+        let userNotesText = recording.userNotes
 
         // Get user preferences for note style and summary length
         let noteStyleRaw = UserDefaults.standard.string(forKey: "noteStyle") ?? NoteStyle.detailed.rawValue
@@ -222,6 +235,7 @@ class RecordingViewModel: ObservableObject {
         do {
             let classNotes = try await geminiService.generateClassNotes(
                 from: transcriptText,
+                userNotes: userNotesText,
                 noteStyle: noteStyle,
                 summaryLength: summaryLength
             )
@@ -279,12 +293,13 @@ class RecordingViewModel: ObservableObject {
             return
         }
 
-        // Generate PDF data (with class notes if available)
+        // Generate PDF data (with user notes and class notes if available)
         guard let pdfData = PDFExportService.generatePDF(
             className: classModel.name,
             date: recording.date,
             duration: recording.duration,
             transcriptText: recording.transcriptText,
+            userNotes: recording.userNotes,
             classNotes: recording.classNotes
         ) else {
             DispatchQueue.main.async {
@@ -437,6 +452,8 @@ class RecordingViewModel: ObservableObject {
             self.isPaused = false
             self.currentDuration = 0
             self.transcribedText = ""
+            self.userNotes = ""
+            self.userNotesTitle = ""
             self.currentAudioURL = nil
             self.errorMessage = nil
         }

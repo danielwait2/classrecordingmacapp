@@ -9,19 +9,16 @@ struct RecordingView: View {
     @State private var ringAnimation = false
 
     var body: some View {
-        VStack(spacing: 24) {
-            Spacer(minLength: 20)
-
-            // Recording controls area
+        VStack(spacing: 0) {
             if recordingViewModel.isRecording {
                 recordingActiveView
             } else {
                 recordingIdleView
             }
-
-            Spacer(minLength: 20)
         }
-        .padding(.horizontal, 24)
+        .padding(.horizontal, 20)
+        .padding(.top, 16)
+        .padding(.bottom, 12)
         .alert("Permissions Required", isPresented: $showingPermissionAlert) {
             Button("OK", role: .cancel) { }
         } message: {
@@ -32,102 +29,105 @@ struct RecordingView: View {
     // MARK: - Recording Active View
 
     private var recordingActiveView: some View {
-        VStack(spacing: 20) {
-            // Duration display with recording indicator
-            HStack(spacing: 12) {
-                // Pulsing recording dot
+        VStack(spacing: 12) {
+            // Compact header with timer and class name
+            compactHeader
+
+            // Live transcript with integrated controls
+            transcriptWithControls
+
+            // User notes - fills remaining space
+            userNotesInput
+        }
+    }
+
+    // MARK: - Compact Header
+
+    private var compactHeader: some View {
+        HStack {
+            // Recording indicator and timer
+            HStack(spacing: 8) {
                 Circle()
-                    .fill(SpongeTheme.coral)
-                    .frame(width: 12, height: 12)
+                    .fill(recordingViewModel.isPaused ? Color.gray : SpongeTheme.coral)
+                    .frame(width: 10, height: 10)
                     .modifier(PulsingModifier(isActive: !recordingViewModel.isPaused))
 
                 Text(recordingViewModel.formattedDuration)
-                    .font(.system(size: 44, weight: .light, design: .monospaced))
+                    .font(.system(size: 24, weight: .medium, design: .monospaced))
                     .foregroundColor(.primary)
             }
 
-            // Live transcript preview
-            transcriptPreview
+            Spacer()
 
-            // Control buttons
-            recordingControls
-                .padding(.top, 8)
-
-            // Status text
-            statusText
-        }
-    }
-
-    // MARK: - Recording Idle View
-
-    private var recordingIdleView: some View {
-        VStack(spacing: 20) {
-            // Duration (shows 00:00:00 when idle)
-            Text(recordingViewModel.formattedDuration)
-                .font(.system(size: 44, weight: .light, design: .monospaced))
-                .foregroundColor(.secondary)
-
-            // Record button
-            recordButton
-
-            // Status/warning text
-            statusText
-        }
-    }
-
-    // MARK: - Transcript Preview
-
-    private var transcriptPreview: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Header
-            HStack {
-                Circle()
-                    .fill(recordingViewModel.isPaused ? Color.gray : Color.red)
-                    .frame(width: 8, height: 8)
-                    .modifier(PulsingModifier(isActive: !recordingViewModel.isPaused))
-
-                Text(recordingViewModel.isPaused ? "Paused" : "Live Transcription")
+            // Class name
+            if let selectedClass = classViewModel.selectedClass {
+                Text(selectedClass.name)
                     .font(.subheadline.weight(.medium))
                     .foregroundColor(.secondary)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(Color.secondary.opacity(0.1))
+                    .cornerRadius(6)
+            }
+        }
+        .padding(.horizontal, 4)
+    }
+
+    // MARK: - Transcript with Controls
+
+    private var transcriptWithControls: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Header with controls
+            HStack(spacing: 12) {
+                // Status indicator
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(recordingViewModel.isPaused ? Color.gray : Color.red)
+                        .frame(width: 6, height: 6)
+                        .modifier(PulsingModifier(isActive: !recordingViewModel.isPaused))
+
+                    Text(recordingViewModel.isPaused ? "Paused" : "Live Transcription")
+                        .font(.caption.weight(.medium))
+                        .foregroundColor(.secondary)
+                }
 
                 Spacer()
 
-                // Paste button for debugging
-                #if DEBUG
-                Button {
-                    pasteFromClipboard()
-                } label: {
-                    Image(systemName: "doc.on.clipboard")
-                        .font(.caption.weight(.semibold))
-                        .foregroundColor(.accentColor)
-                }
-                .buttonStyle(.plain)
-                .help("Paste text from clipboard (debug only)")
-                #endif
-
+                // Word count
                 Text("\(wordCount) words")
-                    .font(.caption)
+                    .font(.caption2)
                     .foregroundColor(.secondary)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
                     .background(Color.secondary.opacity(0.1))
                     .cornerRadius(4)
 
-                if wordCount > 50 {
+                // Expand/collapse button
+                if lineCount > 3 {
                     Button {
                         withAnimation(.easeInOut(duration: 0.2)) {
                             showFullTranscript.toggle()
                         }
                     } label: {
                         Image(systemName: showFullTranscript ? "chevron.up" : "chevron.down")
-                            .font(.caption.weight(.semibold))
-                            .foregroundColor(.accentColor)
+                            .font(.caption2.weight(.semibold))
+                            .foregroundColor(.secondary)
                     }
                     .buttonStyle(.plain)
                 }
+
+                Divider()
+                    .frame(height: 16)
+
+                // Inline controls
+                if isConfirmingStop {
+                    inlineConfirmControls
+                } else {
+                    inlineRecordingControls
+                }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
             .background(Color.secondary.opacity(0.05))
 
             Divider()
@@ -139,19 +139,19 @@ struct RecordingView: View {
                         if recordingViewModel.transcribedText.isEmpty {
                             HStack(spacing: 8) {
                                 ProgressView()
-                                    .scaleEffect(0.7)
+                                    .scaleEffect(0.6)
                                 Text("Listening...")
-                                    .font(.body)
+                                    .font(.subheadline)
                                     .foregroundColor(.secondary)
                             }
                             .frame(maxWidth: .infinity, alignment: .center)
-                            .padding(.vertical, 24)
+                            .padding(.vertical, 16)
                         } else {
                             Text(displayText)
-                                .font(.body)
+                                .font(.subheadline)
                                 .foregroundColor(.primary)
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(16)
+                                .padding(12)
                                 .id("transcriptEnd")
                         }
                     }
@@ -165,85 +165,134 @@ struct RecordingView: View {
                 }
             }
         }
-        .frame(height: showFullTranscript ? 280 : 140)
+        .frame(height: showFullTranscript ? 200 : 100)
         .background(Color.secondaryBackground)
-        .cornerRadius(12)
+        .cornerRadius(10)
         .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(recordingViewModel.isPaused ? Color.clear : Color.red.opacity(0.3), lineWidth: 1.5)
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(recordingViewModel.isPaused ? Color.secondary.opacity(0.2) : Color.red.opacity(0.3), lineWidth: 1)
         )
     }
 
-    // MARK: - Recording Controls
+    // MARK: - Inline Recording Controls
 
-    private var recordingControls: some View {
-        HStack(spacing: 32) {
-            if isConfirmingStop {
-                // Back button
-                ControlButton(
-                    icon: "arrow.uturn.backward",
-                    label: "Back",
-                    color: .secondary,
-                    size: 48
-                ) {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        isConfirmingStop = false
-                    }
+    private var inlineRecordingControls: some View {
+        HStack(spacing: 8) {
+            // Pause/Resume button
+            Button {
+                if recordingViewModel.isPaused {
+                    recordingViewModel.resumeRecording()
+                } else {
+                    recordingViewModel.pauseRecording()
                 }
-
-                // Save button
-                ControlButton(
-                    icon: "checkmark",
-                    label: "Save",
-                    color: SpongeTheme.coral,
-                    size: 56,
-                    isPrimary: true
-                ) {
-                    if let selectedClass = classViewModel.selectedClass {
-                        recordingViewModel.stopRecording(classModel: selectedClass, classViewModel: classViewModel)
-                    }
-                    isConfirmingStop = false
-                }
-
-                // Discard button
-                ControlButton(
-                    icon: "trash",
-                    label: "Discard",
-                    color: .red,
-                    size: 48
-                ) {
-                    recordingViewModel.cancelRecording()
-                    isConfirmingStop = false
-                }
-            } else {
-                // Pause/Resume button
-                ControlButton(
-                    icon: recordingViewModel.isPaused ? "play.fill" : "pause.fill",
-                    label: recordingViewModel.isPaused ? "Resume" : "Pause",
-                    color: SpongeTheme.coralLight,
-                    size: 52
-                ) {
-                    if recordingViewModel.isPaused {
-                        recordingViewModel.resumeRecording()
-                    } else {
-                        recordingViewModel.pauseRecording()
-                    }
-                }
-
-                // Stop button
-                ControlButton(
-                    icon: "stop.fill",
-                    label: "Stop",
-                    color: .red,
-                    size: 52
-                ) {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        isConfirmingStop = true
-                    }
-                }
+            } label: {
+                Image(systemName: recordingViewModel.isPaused ? "play.fill" : "pause.fill")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(width: 28, height: 28)
+                    .background(SpongeTheme.coral)
+                    .cornerRadius(6)
             }
+            .buttonStyle(.plain)
+            .help(recordingViewModel.isPaused ? "Resume" : "Pause")
+
+            // Stop button
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isConfirmingStop = true
+                }
+            } label: {
+                Image(systemName: "stop.fill")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(width: 28, height: 28)
+                    .background(Color.red)
+                    .cornerRadius(6)
+            }
+            .buttonStyle(.plain)
+            .help("Stop Recording")
+        }
+    }
+
+    // MARK: - Inline Confirm Controls
+
+    private var inlineConfirmControls: some View {
+        HStack(spacing: 6) {
+            // Back button
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isConfirmingStop = false
+                }
+            } label: {
+                Image(systemName: "arrow.uturn.backward")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundColor(.secondary)
+                    .frame(width: 24, height: 24)
+                    .background(Color.secondary.opacity(0.15))
+                    .cornerRadius(5)
+            }
+            .buttonStyle(.plain)
+            .help("Back")
+
+            // Save button
+            Button {
+                if let selectedClass = classViewModel.selectedClass {
+                    recordingViewModel.stopRecording(classModel: selectedClass, classViewModel: classViewModel)
+                }
+                isConfirmingStop = false
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 10, weight: .bold))
+                    Text("Save")
+                        .font(.caption.weight(.semibold))
+                }
+                .foregroundColor(.white)
+                .padding(.horizontal, 10)
+                .frame(height: 24)
+                .background(SpongeTheme.coral)
+                .cornerRadius(5)
+            }
+            .buttonStyle(.plain)
+            .help("Save Recording")
+
+            // Discard button
+            Button {
+                recordingViewModel.cancelRecording()
+                isConfirmingStop = false
+            } label: {
+                Image(systemName: "trash")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundColor(.red)
+                    .frame(width: 24, height: 24)
+                    .background(Color.red.opacity(0.15))
+                    .cornerRadius(5)
+            }
+            .buttonStyle(.plain)
+            .help("Discard")
         }
         .animation(.easeInOut(duration: 0.2), value: isConfirmingStop)
+    }
+
+    // MARK: - Recording Idle View
+
+    private var recordingIdleView: some View {
+        VStack(spacing: 20) {
+            Spacer()
+
+            // Duration (shows 00:00:00 when idle)
+            Text(recordingViewModel.formattedDuration)
+                .font(.system(size: 44, weight: .light, design: .monospaced))
+                .foregroundColor(.secondary)
+
+            // Record button
+            recordButton
+
+            // Status/warning text
+            statusText
+
+            Spacer()
+        }
     }
 
     // MARK: - Record Button
@@ -335,17 +384,7 @@ struct RecordingView: View {
 
     @ViewBuilder
     private var statusText: some View {
-        if recordingViewModel.isRecording {
-            if isConfirmingStop {
-                Label("Save or discard this recording?", systemImage: "questionmark.circle")
-                    .font(.subheadline)
-                    .foregroundColor(.orange)
-            } else {
-                Text(recordingViewModel.isPaused ? "Recording paused" : "Recording in progress")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            }
-        } else if let error = recordingViewModel.errorMessage {
+        if let error = recordingViewModel.errorMessage {
             Label(error, systemImage: "exclamationmark.triangle")
                 .font(.subheadline)
                 .foregroundColor(.red)
@@ -364,10 +403,20 @@ struct RecordingView: View {
         }
     }
 
+    // MARK: - User Notes Input
+
+    private var userNotesInput: some View {
+        ExpandingMarkdownNotesEditor(text: $recordingViewModel.userNotes, noteTitle: $recordingViewModel.userNotesTitle)
+    }
+
     // MARK: - Computed Properties
 
     private var wordCount: Int {
         recordingViewModel.transcribedText.split(separator: " ").count
+    }
+
+    private var lineCount: Int {
+        recordingViewModel.transcribedText.components(separatedBy: "\n").count
     }
 
     private var displayText: String {
@@ -375,30 +424,16 @@ struct RecordingView: View {
             return recordingViewModel.transcribedText
         }
 
-        let words = recordingViewModel.transcribedText.split(separator: " ")
-        if words.count <= 50 {
+        let lines = recordingViewModel.transcribedText.components(separatedBy: "\n")
+        if lines.count <= 3 {
             return recordingViewModel.transcribedText
         }
 
-        let lastWords = words.suffix(50)
-        return "… " + lastWords.joined(separator: " ")
+        let lastLines = lines.suffix(3)
+        return "…\n" + lastLines.joined(separator: "\n")
     }
 
     // MARK: - Methods
-
-    #if DEBUG
-    private func pasteFromClipboard() {
-        #if os(macOS)
-        if let clipboardString = NSPasteboard.general.string(forType: .string) {
-            recordingViewModel.transcribedText = clipboardString
-        }
-        #else
-        if let clipboardString = UIPasteboard.general.string {
-            recordingViewModel.transcribedText = clipboardString
-        }
-        #endif
-    }
-    #endif
 
     private func startRecordingWithPermissionCheck() {
         if recordingViewModel.permissionsGranted {
@@ -416,35 +451,165 @@ struct RecordingView: View {
 
 }
 
-// MARK: - Control Button
+// MARK: - Expanding Markdown Notes Editor (fills available space)
 
-struct ControlButton: View {
-    let icon: String
-    let label: String
-    let color: Color
-    var size: CGFloat = 52
-    var isPrimary: Bool = false
-    let action: () -> Void
+struct ExpandingMarkdownNotesEditor: View {
+    @Binding var text: String
+    @Binding var noteTitle: String
+    @FocusState private var isTitleFocused: Bool
 
     var body: some View {
-        Button(action: action) {
-            VStack(spacing: 6) {
-                ZStack {
-                    Circle()
-                        .fill(isPrimary ? color : color.opacity(0.15))
-                        .frame(width: size, height: size)
+        VStack(alignment: .leading, spacing: 0) {
+            // Header with title and word count
+            headerSection
 
-                    Image(systemName: icon)
-                        .font(.system(size: size * 0.4, weight: .semibold))
-                        .foregroundColor(isPrimary ? .white : color)
+            Divider()
+
+            // Formatting toolbar
+            formattingToolbar
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(Color.secondary.opacity(0.03))
+
+            Divider()
+
+            // Notes text editor - fills remaining space
+            #if os(macOS)
+            LiveMarkdownEditor(text: $text)
+            #else
+            ZStack(alignment: .topLeading) {
+                TextEditor(text: $text)
+                    .font(.system(.body, design: .default))
+                    .padding(12)
+                    .scrollContentBackground(.hidden)
+                    .background(Color.clear)
+
+                if text.isEmpty {
+                    placeholderText
                 }
-
-                Text(label)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
             }
+            #endif
         }
-        .buttonStyle(.plain)
+        .background(Color.secondaryBackground)
+        .cornerRadius(10)
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+        )
+    }
+
+    // MARK: - Header Section
+
+    private var headerSection: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "note.text")
+                .font(.caption.weight(.medium))
+                .foregroundColor(.secondary)
+
+            // Editable title
+            TextField("Note Title (optional)", text: $noteTitle)
+                .textFieldStyle(.plain)
+                .font(.caption.weight(.medium))
+                .foregroundColor(.primary)
+                .focused($isTitleFocused)
+
+            Spacer()
+
+            Text("\(wordCount) words")
+                .font(.caption2)
+                .foregroundColor(.secondary)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(Color.secondary.opacity(0.1))
+                .cornerRadius(4)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(Color.secondary.opacity(0.05))
+    }
+
+    // MARK: - Formatting Toolbar
+
+    private var formattingToolbar: some View {
+        HStack(spacing: 4) {
+            // Heading buttons with labels
+            FormatButtonWithLabel(label: "H1", tooltip: "Heading 1") {
+                insertMarkdown(prefix: "# ", suffix: "")
+            }
+
+            FormatButtonWithLabel(label: "H2", tooltip: "Heading 2") {
+                insertMarkdown(prefix: "## ", suffix: "")
+            }
+
+            FormatButtonWithLabel(label: "H3", tooltip: "Heading 3") {
+                insertMarkdown(prefix: "### ", suffix: "")
+            }
+
+            Divider()
+                .frame(height: 16)
+                .padding(.horizontal, 4)
+
+            // Text formatting with icons
+            FormatButton(icon: "bold", tooltip: "Bold (Cmd+B)") {
+                insertMarkdown(prefix: "**", suffix: "**")
+            }
+
+            FormatButton(icon: "italic", tooltip: "Italic (Cmd+I)") {
+                insertMarkdown(prefix: "_", suffix: "_")
+            }
+
+            Divider()
+                .frame(height: 16)
+                .padding(.horizontal, 4)
+
+            // List buttons
+            FormatButton(icon: "list.bullet", tooltip: "Bullet List") {
+                insertMarkdown(prefix: "- ", suffix: "", isLinePrefix: true)
+            }
+
+            FormatButton(icon: "list.number", tooltip: "Numbered List") {
+                insertMarkdown(prefix: "1. ", suffix: "", isLinePrefix: true)
+            }
+
+            Spacer()
+        }
+    }
+
+    private var placeholderText: some View {
+        Text("Start typing your notes...")
+            .font(.body)
+            .foregroundColor(.secondary.opacity(0.5))
+            .padding(.horizontal, 16)
+            .padding(.vertical, 20)
+            .allowsHitTesting(false)
+    }
+
+    // MARK: - Computed Properties
+
+    private var wordCount: Int {
+        text.split(separator: " ").count
+    }
+
+    // MARK: - Formatting Actions
+
+    private func insertMarkdown(prefix: String, suffix: String, isLinePrefix: Bool = false) {
+        #if os(macOS)
+        NotificationCenter.default.post(
+            name: .insertMarkdown,
+            object: nil,
+            userInfo: ["prefix": prefix, "suffix": suffix, "isLinePrefix": isLinePrefix]
+        )
+        #else
+        if isLinePrefix {
+            if text.isEmpty || text.hasSuffix("\n") {
+                text += prefix
+            } else {
+                text += "\n" + prefix
+            }
+        } else {
+            text += "\(prefix)text\(suffix)"
+        }
+        #endif
     }
 }
 

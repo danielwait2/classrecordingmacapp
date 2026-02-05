@@ -33,9 +33,24 @@ class MarkdownParser {
     private static func parseLine(_ line: String, baseFont: CTFont, baseColor: CGColor) -> NSAttributedString {
         let trimmed = line.trimmingCharacters(in: .whitespaces)
 
-        // Check for headers (## Header)
-        if trimmed.hasPrefix("##") {
-            let headerText = trimmed.replacingOccurrences(of: "^##\\s*", with: "", options: .regularExpression)
+        // Check for H3 headers (### Header) - must check before ## and #
+        if trimmed.hasPrefix("### ") || trimmed == "###" {
+            let headerText = String(trimmed.dropFirst(3)).trimmingCharacters(in: .whitespaces)
+            let headerFont = CTFontCreateWithName("Helvetica-Bold" as CFString, 12, nil)
+            let paragraphStyle = NSMutableParagraphStyle()
+            paragraphStyle.paragraphSpacing = 6
+            paragraphStyle.paragraphSpacingBefore = 8
+
+            return NSAttributedString(string: headerText, attributes: [
+                .font: headerFont,
+                .foregroundColor: baseColor,
+                .paragraphStyle: paragraphStyle
+            ])
+        }
+
+        // Check for H2 headers (## Header) - must check before #
+        if trimmed.hasPrefix("## ") || trimmed == "##" {
+            let headerText = String(trimmed.dropFirst(2)).trimmingCharacters(in: .whitespaces)
             let headerFont = CTFontCreateWithName("Helvetica-Bold" as CFString, 14, nil)
             let paragraphStyle = NSMutableParagraphStyle()
             paragraphStyle.paragraphSpacing = 8
@@ -48,13 +63,13 @@ class MarkdownParser {
             ])
         }
 
-        // Check for subheaders (### Header)
-        if trimmed.hasPrefix("###") {
-            let headerText = trimmed.replacingOccurrences(of: "^###\\s*", with: "", options: .regularExpression)
-            let headerFont = CTFontCreateWithName("Helvetica-Bold" as CFString, 12, nil)
+        // Check for H1 headers (# Header)
+        if trimmed.hasPrefix("# ") || trimmed == "#" {
+            let headerText = String(trimmed.dropFirst(1)).trimmingCharacters(in: .whitespaces)
+            let headerFont = CTFontCreateWithName("Helvetica-Bold" as CFString, 16, nil)
             let paragraphStyle = NSMutableParagraphStyle()
-            paragraphStyle.paragraphSpacing = 6
-            paragraphStyle.paragraphSpacingBefore = 8
+            paragraphStyle.paragraphSpacing = 10
+            paragraphStyle.paragraphSpacingBefore = 14
 
             return NSAttributedString(string: headerText, attributes: [
                 .font: headerFont,

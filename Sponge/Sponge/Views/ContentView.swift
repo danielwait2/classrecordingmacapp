@@ -11,22 +11,29 @@ struct ContentView: View {
         NavigationStack {
             GeometryReader { geometry in
                 VStack(spacing: 0) {
-                    // Main recording area
-                    RecordingView(recordingViewModel: recordingViewModel)
-                        .frame(minHeight: max(geometry.size.height * 0.35, 300), idealHeight: geometry.size.height * 0.42)
-                        .layoutPriority(1)
-                        .background(Color.white)
+                    if recordingViewModel.isRecording {
+                        // When recording: full screen for recording view
+                        RecordingView(recordingViewModel: recordingViewModel)
+                            .frame(maxHeight: .infinity)
+                            .background(Color.white)
+                    } else {
+                        // When not recording: show both recording view and recordings list
+                        RecordingView(recordingViewModel: recordingViewModel)
+                            .frame(minHeight: max(geometry.size.height * 0.35, 300), idealHeight: geometry.size.height * 0.42)
+                            .layoutPriority(1)
+                            .background(Color.white)
 
-                    // Divider with coral accent
-                    Rectangle()
-                        .fill(SpongeTheme.coral.opacity(0.2))
-                        .frame(height: 2)
+                        // Divider with coral accent
+                        Rectangle()
+                            .fill(SpongeTheme.coral.opacity(0.2))
+                            .frame(height: 2)
 
-                    // Recordings list
-                    RecordingsListView()
-                        .environmentObject(classViewModel)
-                        .frame(minHeight: 200)
-                        .background(Color.white)
+                        // Recordings list
+                        RecordingsListView()
+                            .environmentObject(classViewModel)
+                            .frame(minHeight: 200)
+                            .background(Color.white)
+                    }
                 }
             }
             .background(SpongeTheme.backgroundCoral.opacity(0.05))

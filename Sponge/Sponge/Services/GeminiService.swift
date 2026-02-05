@@ -41,12 +41,29 @@ class GeminiService {
 
     func generateClassNotes(
         from transcript: String,
+        userNotes: String = "",
         noteStyle: NoteStyle = .detailed,
         summaryLength: SummaryLength = .comprehensive
     ) async throws -> String {
         // Get API key from Keychain
         guard let apiKey = KeychainHelper.shared.getGeminiAPIKey(), !apiKey.isEmpty else {
             throw GeminiError.noAPIKey
+        }
+
+        // Build user notes section if provided
+        let userNotesSection: String
+        if !userNotes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            userNotesSection = """
+
+            Here are the student's own notes taken during the lecture:
+
+            \(userNotes)
+
+            Please incorporate these notes and any specific points the student highlighted into the class notes.
+
+            """
+        } else {
+            userNotesSection = ""
         }
 
         // Construct the prompt with customization
@@ -80,7 +97,7 @@ class GeminiService {
 
         ## ACTION ITEMS
         (Homework, assignments, things to do, or review)
-
+        \(userNotesSection)
         Here is the lecture transcription:
 
         \(transcript)

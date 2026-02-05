@@ -13,6 +13,7 @@ class PDFExportService {
         date: Date,
         duration: TimeInterval,
         transcriptText: String,
+        userNotes: String? = nil,
         classNotes: String? = nil
     ) -> Data? {
         let pageWidth: CGFloat = 612  // US Letter width in points
@@ -93,8 +94,18 @@ class PDFExportService {
             .foregroundColor: cgColor(black: true)
         ]
 
-        // Build the full content with class notes (if available) and transcript
+        // Build the full content with user notes, class notes (if available), and transcript
         let fullContent = NSMutableAttributedString()
+
+        // Add user notes section if available
+        if let userNotes = userNotes, !userNotes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            let userNotesHeader = NSAttributedString(string: "YOUR NOTES\n\n", attributes: headerAttributes)
+            fullContent.append(userNotesHeader)
+
+            let userNotesContent = NSAttributedString(string: userNotes, attributes: bodyAttributes)
+            fullContent.append(userNotesContent)
+            fullContent.append(NSAttributedString(string: "\n\n", attributes: bodyAttributes))
+        }
 
         // Add class notes section if available
         if let classNotes = classNotes, !classNotes.isEmpty {
