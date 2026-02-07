@@ -10,6 +10,7 @@ struct SettingsView: View {
 
     @AppStorage("autoGenerateClassNotes") private var autoGenerateClassNotes = false
     @AppStorage("realtimeTranscription") private var realtimeTranscription = true
+    @AppStorage("generateRecallPrompts") private var generateRecallPrompts = true
     @AppStorage("noteStyle") private var noteStyleRaw: String = NoteStyle.detailed.rawValue
     @AppStorage("summaryLength") private var summaryLengthRaw: String = SummaryLength.comprehensive.rawValue
     @State private var geminiAPIKey: String = ""
@@ -64,6 +65,18 @@ struct SettingsView: View {
                             }
 
                             if autoGenerateClassNotes {
+                                Divider()
+
+                                // Recall Prompts Toggle
+                                SettingRow(
+                                    icon: "brain.head.profile",
+                                    title: "Generate Recall Questions",
+                                    description: "Create practice questions for post-lecture review"
+                                ) {
+                                    Toggle("", isOn: $generateRecallPrompts)
+                                        .labelsHidden()
+                                }
+
                                 Divider()
 
                                 // Note Style

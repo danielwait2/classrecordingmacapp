@@ -15,6 +15,11 @@ class RecordingViewModel: ObservableObject {
     @Published var userNotes: String = ""
     @Published var userNotesTitle: String = ""
 
+    // Intent Markers and Catch-Up
+    @Published var intentMarkers: [IntentMarker] = []
+    @Published var isCatchUpLoading: Bool = false
+    @Published var lastCatchUpSummary: CatchUpSummary?
+
     let audioService = AudioRecordingService()
     let transcriptionService = TranscriptionService()
     private let driveService = GoogleDriveService.shared
@@ -25,6 +30,7 @@ class RecordingViewModel: ObservableObject {
 
     @AppStorage("autoGenerateClassNotes") private var autoGenerateClassNotes = false
     @AppStorage("realtimeTranscription") private var realtimeTranscription = true
+    @AppStorage("generateRecallPrompts") private var generateRecallPrompts = true
 
     init() {
         setupBindings()
@@ -168,6 +174,10 @@ class RecordingViewModel: ObservableObject {
             finalUserNotes = userNotes
         }
 
+        // Capture intent markers and catch-up summaries
+        let finalIntentMarkers = intentMarkers
+        let finalCatchUpSummaries = lastCatchUpSummary.map { [$0] } ?? []
+
         processRecording(
             classId: classModel.id,
             date: recordingDate,
@@ -175,6 +185,8 @@ class RecordingViewModel: ObservableObject {
             audioFileName: audioURL.lastPathComponent,
             transcript: finalTranscript,
             userNotes: finalUserNotes,
+            intentMarkers: finalIntentMarkers,
+            catchUpSummaries: finalCatchUpSummaries,
             classModel: classModel,
             classViewModel: classViewModel
         )
@@ -189,6 +201,8 @@ class RecordingViewModel: ObservableObject {
         audioFileName: String,
         transcript: String,
         userNotes: String,
+        intentMarkers: [IntentMarker],
+        catchUpSummaries: [CatchUpSummary],
         classModel: ClassModel,
         classViewModel: ClassViewModel
     ) {
@@ -199,15 +213,17 @@ class RecordingViewModel: ObservableObject {
             audioFileName: audioFileName,
             transcriptText: transcript,
             userNotes: userNotes,
-            name: RecordingModel.generateDefaultName(className: classModel.name, date: date)
+            name: RecordingModel.generateDefaultName(className: classModel.name, date: date),
+            intentMarkers: intentMarkers,
+            catchUpSummaries: catchUpSummaries
         )
 
         classViewModel.addRecording(recording)
 
-        // Generate class notes if enabled
+        // Generate class notes and enhanced summaries if enabled
         if autoGenerateClassNotes && !transcript.isEmpty {
             Task {
-                await generateClassNotes(for: &recording, classModel: classModel, classViewModel: classViewModel)
+                await generateEnhancedContent(for: &recording, classModel: classModel, classViewModel: classViewModel)
             }
         } else {
             // Export PDF immediately if notes generation is disabled
@@ -215,9 +231,9 @@ class RecordingViewModel: ObservableObject {
         }
     }
 
-    // MARK: - Class Notes Generation
+    // MARK: - Enhanced Content Generation
 
-    private func generateClassNotes(for recording: inout RecordingModel, classModel: ClassModel, classViewModel: ClassViewModel) async {
+    private func generateEnhancedContent(for recording: inout RecordingModel, classModel: ClassModel, classViewModel: ClassViewModel) async {
         await MainActor.run {
             self.isGeneratingNotes = true
         }
@@ -225,6 +241,7 @@ class RecordingViewModel: ObservableObject {
         // Capture values to avoid referencing inout parameter in concurrent code
         let transcriptText = recording.transcriptText
         let userNotesText = recording.userNotes
+        let markers = recording.intentMarkers
 
         // Get user preferences for note style and summary length
         let noteStyleRaw = UserDefaults.standard.string(forKey: "noteStyle") ?? NoteStyle.detailed.rawValue
@@ -232,17 +249,35 @@ class RecordingViewModel: ObservableObject {
         let noteStyle = NoteStyle(rawValue: noteStyleRaw) ?? .detailed
         let summaryLength = SummaryLength(rawValue: summaryLengthRaw) ?? .comprehensive
 
+        var updatedRecording = recording
+
         do {
+            // Generate traditional class notes (for PDF compatibility)
             let classNotes = try await geminiService.generateClassNotes(
                 from: transcriptText,
                 userNotes: userNotesText,
                 noteStyle: noteStyle,
                 summaryLength: summaryLength
             )
-
-            // Update recording with class notes
-            var updatedRecording = recording
             updatedRecording.classNotes = classNotes
+
+            // Generate enhanced summaries with marker-focused content
+            let enhancedSummary = try await geminiService.generateEnhancedSummaries(
+                from: transcriptText,
+                markers: markers,
+                userNotes: userNotesText
+            )
+            updatedRecording.enhancedSummary = enhancedSummary
+
+            // Generate recall prompts if enabled
+            if generateRecallPrompts {
+                let recallPrompts = try await geminiService.generateRecallPrompts(
+                    from: transcriptText,
+                    markers: markers
+                )
+                updatedRecording.recallPrompts = recallPrompts
+            }
+
             recording = updatedRecording
 
             // Create a local copy for use in MainActor closure
@@ -283,6 +318,89 @@ class RecordingViewModel: ObservableObject {
         }
 
         reset()
+    }
+
+    // MARK: - Intent Markers
+
+    /// Adds an intent marker at the current timestamp
+    func addIntentMarker(type: IntentMarkerType) {
+        let snapshot = getRecentTranscriptSnapshot(wordCount: 30)
+        let marker = IntentMarker(
+            type: type,
+            timestamp: currentDuration,
+            transcriptSnapshot: snapshot
+        )
+
+        DispatchQueue.main.async {
+            self.intentMarkers.append(marker)
+        }
+
+        // Haptic feedback on iOS
+        #if os(iOS)
+        let generator = UIImpactFeedbackGenerator(style: .medium)
+        generator.impactOccurred()
+        #endif
+    }
+
+    /// Gets the last N words from the transcript
+    private func getRecentTranscriptSnapshot(wordCount: Int) -> String? {
+        let words = transcribedText.split(separator: " ")
+        guard !words.isEmpty else { return nil }
+
+        let recentWords = words.suffix(wordCount)
+        return recentWords.joined(separator: " ")
+    }
+
+    // MARK: - Catch-Up Summary
+
+    /// Requests a catch-up summary for what was missed recently
+    func requestCatchUpSummary() async {
+        // Need at least some transcript to summarize
+        guard !transcribedText.isEmpty else { return }
+
+        await MainActor.run {
+            self.isCatchUpLoading = true
+        }
+
+        // Estimate transcript coverage - assume ~150 words per minute
+        // Get last ~2.5 minutes worth (roughly 375 words)
+        let words = transcribedText.split(separator: " ")
+        let recentWordCount = min(375, words.count)
+        let contextWordCount = min(200, max(0, words.count - recentWordCount))
+
+        let recentWords = words.suffix(recentWordCount)
+        let contextWords = words.dropLast(recentWordCount).suffix(contextWordCount)
+
+        let recentTranscript = recentWords.joined(separator: " ")
+        let previousContext = contextWords.joined(separator: " ")
+
+        // Calculate time coverage
+        let requestedAt = currentDuration
+        let estimatedCoverageTime = Double(recentWordCount) / 150.0 * 60.0 // seconds
+        let coveringFrom = max(0, requestedAt - estimatedCoverageTime)
+
+        do {
+            let summary = try await geminiService.generateCatchUpSummary(
+                recentTranscript: recentTranscript,
+                previousContext: previousContext
+            )
+
+            let catchUpSummary = CatchUpSummary(
+                requestedAt: requestedAt,
+                coveringFrom: coveringFrom,
+                summary: summary
+            )
+
+            await MainActor.run {
+                self.lastCatchUpSummary = catchUpSummary
+                self.isCatchUpLoading = false
+            }
+        } catch {
+            await MainActor.run {
+                self.isCatchUpLoading = false
+                self.errorMessage = "Failed to generate catch-up summary: \(error.localizedDescription)"
+            }
+        }
     }
 
     // MARK: - PDF Export
@@ -456,6 +574,9 @@ class RecordingViewModel: ObservableObject {
             self.userNotesTitle = ""
             self.currentAudioURL = nil
             self.errorMessage = nil
+            self.intentMarkers = []
+            self.lastCatchUpSummary = nil
+            self.isCatchUpLoading = false
         }
     }
 

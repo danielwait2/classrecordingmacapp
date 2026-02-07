@@ -136,7 +136,7 @@ struct RecordingRowView: View {
                             )
                     }
 
-                    HStack {
+                    HStack(spacing: 6) {
                         Text(recording.formattedDate)
                             .font(.caption)
                             .foregroundColor(.secondary)
@@ -145,6 +145,36 @@ struct RecordingRowView: View {
                             Label("Exported", systemImage: "checkmark.circle.fill")
                                 .font(.caption)
                                 .foregroundColor(.green)
+                        }
+
+                        // Marker count badge
+                        if !recording.intentMarkers.isEmpty {
+                            HStack(spacing: 2) {
+                                Image(systemName: "flag.fill")
+                                    .font(.system(size: 8))
+                                Text("\(recording.intentMarkers.count)")
+                                    .font(.system(size: 10, weight: .medium))
+                            }
+                            .foregroundColor(.orange)
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 2)
+                            .background(Color.orange.opacity(0.15))
+                            .cornerRadius(4)
+                        }
+
+                        // Recall questions badge
+                        if let questions = recording.recallPrompts?.questions, !questions.isEmpty {
+                            HStack(spacing: 2) {
+                                Image(systemName: "brain.head.profile")
+                                    .font(.system(size: 8))
+                                Text("\(questions.count)")
+                                    .font(.system(size: 10, weight: .medium))
+                            }
+                            .foregroundColor(.purple)
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 2)
+                            .background(Color.purple.opacity(0.15))
+                            .cornerRadius(4)
                         }
 
                         Spacer()
@@ -244,7 +274,11 @@ struct RecordingRowView: View {
             .tint(.blue)
         }
         .sheet(isPresented: $showingDetail) {
-            TranscriptDetailView(recording: recording, classViewModel: classViewModel)
+            if let classModel = classViewModel.classes.first(where: { $0.id == recording.classId }) {
+                RecordingDetailView(recording: recording, className: classModel.name)
+            } else {
+                RecordingDetailView(recording: recording, className: "Unknown Class")
+            }
         }
         .sheet(isPresented: $showingEditSheet) {
             RecordingEditorView(recording: recording, classViewModel: classViewModel)

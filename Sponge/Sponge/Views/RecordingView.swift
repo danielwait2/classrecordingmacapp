@@ -33,8 +33,30 @@ struct RecordingView: View {
             // Compact header with timer and class name
             compactHeader
 
+            // Intent marker bar for signaling confusion, importance, etc.
+            IntentMarkerBar(
+                onMarkerTapped: { type in
+                    recordingViewModel.addIntentMarker(type: type)
+                },
+                recentMarkers: recordingViewModel.intentMarkers
+            )
+
             // Live transcript with integrated controls
             transcriptWithControls
+
+            // "What did I miss?" catch-up button
+            HStack {
+                Spacer()
+                WhatDidIMissButton(
+                    isLoading: $recordingViewModel.isCatchUpLoading,
+                    lastSummary: recordingViewModel.lastCatchUpSummary,
+                    onTap: {
+                        Task {
+                            await recordingViewModel.requestCatchUpSummary()
+                        }
+                    }
+                )
+            }
 
             // User notes - fills remaining space
             userNotesInput
@@ -198,6 +220,10 @@ struct RecordingView: View {
 
             // Stop button
             Button {
+                // Pause recording/transcription while confirming
+                if !recordingViewModel.isPaused {
+                    recordingViewModel.pauseRecording()
+                }
                 withAnimation(.easeInOut(duration: 0.2)) {
                     isConfirmingStop = true
                 }
@@ -218,8 +244,9 @@ struct RecordingView: View {
 
     private var inlineConfirmControls: some View {
         HStack(spacing: 6) {
-            // Back button
+            // Back button - resume recording if we paused it
             Button {
+                recordingViewModel.resumeRecording()
                 withAnimation(.easeInOut(duration: 0.2)) {
                     isConfirmingStop = false
                 }
