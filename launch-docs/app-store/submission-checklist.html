@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Submission Checklist - Sponge Launch</title>
+    <link rel="stylesheet" href="../assets/docs.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="../index.html">← Back to Hub</a>
+        <h1>App Store Submission Checklist</h1>
+    </nav>
+    
+    <div class="container">
+        <div class="doc-header">
+            <h1>✅ Complete App Store Submission Checklist</h1>
+            <div class="meta">
+                <span class="badge info">Step-by-Step Guide</span>
+            </div>
+        </div>
+
+        <div class="alert alert-info">
+            Follow this comprehensive checklist to ensure nothing is missed during submission.
+        </div>
+
+        <!-- Pre-Submission Phase -->
+        <div class="phase-section">
+            <h2>📋 Pre-Submission Phase (1-2 weeks before)</h2>
+            
+            <h3>App Configuration</h3>
+            <div class="checklist">
+                <label><input type="checkbox"> Bundle identifier updated to production domain</label>
+                <label><input type="checkbox"> Bundle ID registered in Apple Developer portal</label>
+                <label><input type="checkbox"> Capabilities enabled: Microphone, Speech Recognition, Calendar</label>
+                <label><input type="checkbox"> App Icon provided (1024x1024 PNG)</label>
+                <label><input type="checkbox"> Code signing certificates created and installed</label>
+                <label><input type="checkbox"> Provisioning profile created for bundle ID</label>
+                <label><input type="checkbox"> Xcode project settings updated (Team ID, Code Signing)</label>
+                <label><input type="checkbox"> Deployment target: macOS 14.0 or later</label>
+            </div>
+
+            <h3>Privacy & Legal</h3>
+            <div class="checklist">
+                <label><input type="checkbox"> Privacy policy created and hosted</label>
+                <label><input type="checkbox"> Privacy policy accessible at public URL (HTTPS)</label>
+                <label><input type="checkbox"> Support/Contact page created</label>
+                <label><input type="checkbox"> Support URL working and accessible</label>
+                <label><input type="checkbox"> NSMicrophoneUsageDescription added to Info.plist</label>
+                <label><input type="checkbox"> NSSpeechRecognitionUsageDescription added to Info.plist</label>
+                <label><input type="checkbox"> NSCalendarsUsageDescription added to Info.plist</label>
+                <label><input type="checkbox"> Privacy descriptions are clear and user-friendly</label>
+            </div>
+
+            <h3>Quality Assurance</h3>
+            <div class="checklist">
+                <label><input type="checkbox"> Full functionality testing completed</label>
+                <label><input type="checkbox"> Recording works without crashes</label>
+                <label><input type="checkbox"> Speech transcription works correctly</label>
+                <label><input type="checkbox"> AI note generation tested</label>
+                <label><input type="checkbox"> PDF export functions correctly</label>
+                <label><input type="checkbox"> Intent markers save and display</label>
+                <label><input type="checkbox"> Edge cases tested (long recordings, poor audio, network issues)</label>
+                <label><input type="checkbox"> Permission prompts appear correctly</label>
+                <label><input type="checkbox"> Tested on both Apple Silicon and Intel Macs</label>
+                <label><input type="checkbox"> Tested on macOS 14.0 (minimum supported)</label>
+            </div>
+        </div>
+
+        <!-- Build & Archive Phase -->
+        <div class="phase-section">
+            <h2>🔧 Build & Archive Phase (1-3 days before)</h2>
+            
+            <h3>Xcode Build</h3>
+            <div class="checklist">
+                <label><input type="checkbox"> Clean build folder (Cmd+Shift+K)</label>
+                <label><input type="checkbox"> Select Release configuration</label>
+                <label><input type="checkbox"> Select "Sponge" scheme</label>
+                <label><input type="checkbox"> Select generic macOS destination</label>
+                <label><input type="checkbox"> Archive app (Product → Archive)</label>
+                <label><input type="checkbox"> No build errors or warnings</label>
+                <label><input type="checkbox"> Archive appears in Organizer</label>
+            </div>
+
+            <h3>Archive Validation</h3>
+            <div class="checklist">
+                <label><input type="checkbox"> Select archive in Organizer</label>
+                <label><input type="checkbox"> Click "Validate App"</label>
+                <label><input type="checkbox"> Review warnings (address if critical)</label>
+                <label><input type="checkbox"> Validation completes successfully</label>
+            </div>
+
+            <h3>TestFlight Upload (Recommended)</h3>
+            <div class="checklist">
+                <label><input type="checkbox"> Upload archive to TestFlight</label>
+                <label><input type="checkbox"> Wait for processing to complete</label>
+                <label><input type="checkbox"> Download from TestFlight on clean macOS</label>
+                <label><input type="checkbox"> App launches without crashes</label>
+                <label><input type="checkbox"> Perform quick smoke test</label>
+            </div>
+        </div>
+
+        <!-- Submission Phase -->
+        <div class="phase-section blocker-section">
+            <h2>🚀 Submission Phase (Day of submission)</h2>
+            
+            <h3>App Store Connect</h3>
+            <div class="checklist">
+                <label><input type="checkbox"> Log into appstoreconnect.apple.com</label>
+                <label><input type="checkbox"> Two-factor authentication enabled</label>
+                <label><input type="checkbox"> App name is correct ("Sponge")</label>
+                <label><input type="checkbox"> Bundle ID matches project</label>
+                <label><input type="checkbox"> Version number is correct (1.0)</label>
+                <label><input type="checkbox"> Build has completed processing</label>
+            </div>
+
+            <h3>Metadata Completion</h3>
+            <div class="checklist">
+                <label><input type="checkbox"> App name: "Sponge"</label>
+                <label><input type="checkbox"> Subtitle: "AI-Powered Lecture Recorder"</label>
+                <label><input type="checkbox"> Description completed (4,000 chars)</label>
+                <label><input type="checkbox"> Keywords entered (100 chars)</label>
+                <label><input type="checkbox"> Screenshots uploaded (5-8 images, 1280x800)</label>
+                <label><input type="checkbox"> App preview video uploaded (optional)</label>
+                <label><input type="checkbox"> Privacy policy URL entered</label>
+                <label><input type="checkbox"> Support URL entered</label>
+                <label><input type="checkbox"> Category: Education</label>
+                <label><input type="checkbox"> Age rating: 4+</label>
+            </div>
+
+            <h3>Final Submission</h3>
+            <div class="checklist">
+                <label><input type="checkbox"> All required information sections completed</label>
+                <label><input type="checkbox"> No red required fields remain</label>
+                <label><input type="checkbox"> Build selected for version</label>
+                <label><input type="checkbox"> Click "Submit for Review"</label>
+                <label><input type="checkbox"> Answer export compliance: NO encryption</label>
+                <label><input type="checkbox"> Submit confirmed</label>
+                <label><input type="checkbox"> Save submission timestamp</label>
+                <label><input type="checkbox"> Status changes to "Waiting for Review"</label>
+            </div>
+        </div>
+
+        <!-- Post-Submission -->
+        <div class="phase-section">
+            <h2>⏳ Post-Submission Monitoring (24-48 hours)</h2>
+            
+            <h3>Immediate Actions</h3>
+            <div class="checklist">
+                <label><input type="checkbox"> Check email for submission confirmation</label>
+                <label><input type="checkbox"> Verify status changed to "Waiting for Review"</label>
+                <label><input type="checkbox"> Save submission timestamp</label>
+            </div>
+
+            <h3>Monitor Status</h3>
+            <div class="checklist">
+                <label><input type="checkbox"> Check App Store Connect 2-3 times daily</label>
+                <label><input type="checkbox"> Monitor email for reviewer messages</label>
+                <label><input type="checkbox"> Respond to reviewer questions within 24 hours</label>
+            </div>
+
+            <h3>If Approved ✅</h3>
+            <div class="checklist">
+                <label><input type="checkbox"> Status changes to "Ready for Sale"</label>
+                <label><input type="checkbox"> Verify app appears in Mac App Store</label>
+                <label><input type="checkbox"> Download from App Store and test</label>
+                <label><input type="checkbox"> Begin beta testing</label>
+                <label><input type="checkbox"> Begin marketing campaign</label>
+            </div>
+
+            <h3>If Rejected ❌</h3>
+            <div class="checklist">
+                <label><input type="checkbox"> Read rejection reason carefully</label>
+                <label><input type="checkbox"> Understand specific issue cited</label>
+                <label><input type="checkbox"> Fix root cause (not just symptom)</label>
+                <label><input type="checkbox"> Test thoroughly before resubmission</label>
+                <label><input type="checkbox"> Update version and build numbers</label>
+                <label><input type="checkbox"> Archive and validate fixed build</label>
+                <label><input type="checkbox"> Add notes about fix in App Review Information</label>
+                <label><input type="checkbox"> Resubmit</label>
+            </div>
+        </div>
+
+        <!-- Post-Launch -->
+        <div class="phase-section">
+            <h2>🎉 Post-Launch Phase (Week 1-2)</h2>
+            
+            <h3>Monitoring</h3>
+            <div class="checklist">
+                <label><input type="checkbox"> Check Xcode Organizer for crash data</label>
+                <label><input type="checkbox"> Read all reviews posted</label>
+                <label><input type="checkbox"> Respond to negative reviews professionally</label>
+                <label><input type="checkbox"> Monitor download velocity</label>
+                <label><input type="checkbox"> Track active user count</label>
+            </div>
+
+            <h3>Planning Next Update</h3>
+            <div class="checklist">
+                <label><input type="checkbox"> Prioritize bug fixes from feedback</label>
+                <label><input type="checkbox"> Select 2-3 feature improvements</label>
+                <label><input type="checkbox"> Increment version number</label>
+                <label><input type="checkbox"> Target submission in 1-2 weeks</label>
+            </div>
+        </div>
+
+        <!-- Success Criteria -->
+        <div class="metrics-section">
+            <h2>🎯 Success Criteria</h2>
+            
+            <div class="metric-grid">
+                <div class="metric-card">
+                    <h3>Launch Success</h3>
+                    <ul>
+                        <li>App approved within 2 submissions</li>
+                        <li>Zero critical crashes in 24 hours</li>
+                        <li>Crash-free session rate &gt; 95%</li>
+                        <li>4+ star rating in first week</li>
+                        <li>100+ downloads in first week</li>
+                    </ul>
+                </div>
+                <div class="metric-card">
+                    <h3>Week 1 Goals</h3>
+                    <ul>
+                        <li>500+ downloads</li>
+                        <li>4+ star rating</li>
+                        <li>Featured on ProductHunt</li>
+                        <li>1-2 press mentions</li>
+                        <li>&lt;1% crash rate</li>
+                    </ul>
+                </div>
+                <div class="metric-card">
+                    <h3>Month 1 Goals</h3>
+                    <ul>
+                        <li>2,000+ downloads</li>
+                        <li>300+ active users</li>
+                        <li>4.5+ star rating</li>
+                        <li>30%+ retention (day 30)</li>
+                        <li>5+ press mentions</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="quick-start">
+            <h2>📝 Notes & Progress Tracking</h2>
+            <p>Use this section to track your submission progress:</p>
+            
+            <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 12px; margin-top: 15px;">
+                <h4>Submission 1:</h4>
+                <p>Date: _______________</p>
+                <p>Status: _______________</p>
+                <p>Notes: _______________</p>
+            </div>
+        </div>
+
+        <div class="cta-section">
+            <h2>Ready to Submit! 🚀</h2>
+            <p>Follow this checklist step-by-step and you'll successfully launch Sponge on the Mac App Store.</p>
+            <a href="../index.html" class="btn-primary">Back to Launch Hub</a>
+        </div>
+    </div>
+
+    <footer>
+        <p>Last updated: February 7, 2026</p>
+    </footer>
+</body>
+</html>

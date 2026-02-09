@@ -4,7 +4,7 @@ struct ClassManagementView: View {
     @EnvironmentObject var classViewModel: ClassViewModel
     @Environment(\.dismiss) private var dismiss
     @State private var showingAddClass = false
-    @State private var classToEdit: ClassModel?
+    @State private var classToEdit: SDClass?
 
     var body: some View {
         NavigationStack {
@@ -16,9 +16,6 @@ struct ClassManagementView: View {
                 }
             }
             .navigationTitle("Manage Classes")
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Done") {
@@ -43,9 +40,7 @@ struct ClassManagementView: View {
                     .environmentObject(classViewModel)
             }
         }
-        #if os(macOS)
         .frame(minWidth: 450, minHeight: 350)
-        #endif
     }
 
     // MARK: - Empty State
@@ -105,7 +100,7 @@ struct ClassManagementView: View {
 // MARK: - Class Row View
 
 struct ClassRowView: View {
-    let classModel: ClassModel
+    let classModel: SDClass
     let onEdit: () -> Void
 
     var body: some View {
@@ -116,7 +111,7 @@ struct ClassRowView: View {
                     .fill(statusColor.opacity(0.15))
                     .frame(width: 44, height: 44)
 
-                Image(systemName: destinationIcon)
+                Image(systemName: "folder.fill")
                     .font(.system(size: 18))
                     .foregroundColor(statusColor)
             }
@@ -127,7 +122,7 @@ struct ClassRowView: View {
                     .font(.body.weight(.medium))
 
                 HStack(spacing: 8) {
-                    Label(classModel.saveDestination.displayName, systemImage: saveDestinationIcon)
+                    Label(classModel.saveDestination.displayName, systemImage: "folder")
                         .font(.caption)
                         .foregroundColor(.secondary)
 
@@ -164,28 +159,6 @@ struct ClassRowView: View {
 
     private var statusColor: Color {
         classModel.isConfigurationValid ? .accentColor : .orange
-    }
-
-    private var destinationIcon: String {
-        switch classModel.saveDestination {
-        case .localOnly:
-            return "folder.fill"
-        case .googleDriveOnly:
-            return "icloud.fill"
-        case .both:
-            return "arrow.triangle.branch"
-        }
-    }
-
-    private var saveDestinationIcon: String {
-        switch classModel.saveDestination {
-        case .localOnly:
-            return "folder"
-        case .googleDriveOnly:
-            return "icloud"
-        case .both:
-            return "arrow.triangle.branch"
-        }
     }
 }
 

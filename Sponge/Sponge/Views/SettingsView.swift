@@ -1,12 +1,9 @@
 import SwiftUI
-#if os(macOS)
 import AppKit
-#endif
 
 struct SettingsView: View {
     @EnvironmentObject var classViewModel: ClassViewModel
     @Environment(\.dismiss) private var dismiss
-    @ObservedObject private var authService = GoogleAuthService.shared
 
     @AppStorage("autoGenerateClassNotes") private var autoGenerateClassNotes = false
     @AppStorage("realtimeTranscription") private var realtimeTranscription = true
@@ -134,10 +131,6 @@ struct SettingsView: View {
                                     HStack(spacing: 8) {
                                         SecureField("Enter your API key", text: $geminiAPIKey)
                                             .textFieldStyle(.roundedBorder)
-                                            #if os(iOS)
-                                            .autocorrectionDisabled()
-                                            .textInputAutocapitalization(.never)
-                                            #endif
 
                                         if !geminiAPIKey.isEmpty {
                                             Button("Save") {
@@ -172,65 +165,6 @@ struct SettingsView: View {
                         }
                     }
 
-                    // Google Drive Section
-                    SettingsSection(title: "Google Drive", icon: "icloud") {
-                        if authService.isSignedIn, let user = authService.currentUser {
-                            // Signed in
-                            HStack(spacing: 12) {
-                                ZStack {
-                                    Circle()
-                                        .fill(Color.blue.opacity(0.15))
-                                        .frame(width: 48, height: 48)
-                                    Text(String(user.name.prefix(1)).uppercased())
-                                        .font(.title3.weight(.semibold))
-                                        .foregroundColor(.blue)
-                                }
-
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(user.name)
-                                        .font(.body.weight(.medium))
-                                    Text(user.email)
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-
-                                Spacer()
-
-                                Button {
-                                    authService.signOut()
-                                } label: {
-                                    Text("Sign Out")
-                                }
-                                .buttonStyle(.bordered)
-                            }
-                        } else {
-                            // Not signed in
-                            VStack(spacing: 16) {
-                                HStack(spacing: 12) {
-                                    Image(systemName: "icloud.slash")
-                                        .font(.title2)
-                                        .foregroundColor(.secondary)
-
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text("Not Connected")
-                                            .font(.body.weight(.medium))
-                                        Text("Sign in to save PDFs to Google Drive")
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                    }
-
-                                    Spacer()
-                                }
-
-                                GoogleSignInButton {
-                                    Task {
-                                        try? await authService.signIn()
-                                    }
-                                }
-                            }
-                        }
-                    }
-
                     // Class Folders Section
                     if !classViewModel.classes.isEmpty {
                         SettingsSection(title: "Class Folders", icon: "folder") {
@@ -246,9 +180,6 @@ struct SettingsView: View {
             }
             .background(SpongeTheme.backgroundCoral.opacity(0.05))
             .navigationTitle("Settings")
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.large)
-            #endif
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") {
@@ -266,9 +197,7 @@ struct SettingsView: View {
                 Text("Your Gemini API key has been securely saved to the Keychain.")
             }
         }
-        #if os(macOS)
         .frame(minWidth: 600, minHeight: 500)
-        #endif
     }
 
     // MARK: - Helper Methods
@@ -388,7 +317,7 @@ struct InfoBox: View {
 // MARK: - Modern Class Row
 
 struct ModernClassRow: View {
-    let classModel: ClassModel
+    let classModel: SDClass
     @ObservedObject var classViewModel: ClassViewModel
     @State private var showingClassEditor = false
 
@@ -398,11 +327,11 @@ struct ModernClassRow: View {
             HStack(alignment: .center, spacing: 12) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 8)
-                        .fill(destinationColor.opacity(0.15))
+                        .fill(Color.blue.opacity(0.15))
                         .frame(width: 40, height: 40)
-                    Image(systemName: destinationIcon)
+                    Image(systemName: "folder.fill")
                         .font(.body)
-                        .foregroundColor(destinationColor)
+                        .foregroundColor(.blue)
                 }
 
                 VStack(alignment: .leading, spacing: 3) {
@@ -433,25 +362,12 @@ struct ModernClassRow: View {
             }
 
             // Folder status
-            VStack(alignment: .leading, spacing: 6) {
-                if classModel.saveDestination.requiresLocalFolder {
-                    FolderStatusBadge(
-                        type: "Local Folder",
-                        icon: "folder.fill",
-                        isConfigured: classModel.hasLocalFolder,
-                        name: classModel.resolveFolder()?.lastPathComponent ?? "Not configured"
-                    )
-                }
-
-                if classModel.saveDestination.requiresGoogleDrive {
-                    FolderStatusBadge(
-                        type: "Google Drive",
-                        icon: "icloud.fill",
-                        isConfigured: classModel.hasGoogleDriveFolder,
-                        name: classModel.googleDriveFolder?.folderPath ?? "Not configured"
-                    )
-                }
-            }
+            FolderStatusBadge(
+                type: "Local Folder",
+                icon: "folder.fill",
+                isConfigured: classModel.hasLocalFolder,
+                name: classModel.resolveFolder()?.lastPathComponent ?? "Not configured"
+            )
         }
         .padding(14)
         .background(Color.tertiaryBackground)
@@ -459,28 +375,6 @@ struct ModernClassRow: View {
         .sheet(isPresented: $showingClassEditor) {
             ClassEditorView(classToEdit: classModel)
                 .environmentObject(classViewModel)
-        }
-    }
-
-    private var destinationIcon: String {
-        switch classModel.saveDestination {
-        case .localOnly:
-            return "folder.fill"
-        case .googleDriveOnly:
-            return "icloud.fill"
-        case .both:
-            return "arrow.triangle.branch"
-        }
-    }
-
-    private var destinationColor: Color {
-        switch classModel.saveDestination {
-        case .localOnly:
-            return .blue
-        case .googleDriveOnly:
-            return .green
-        case .both:
-            return .purple
         }
     }
 }

@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 @main
 struct SpongeApp: App {
@@ -8,10 +9,9 @@ struct SpongeApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(classViewModel)
+                .modelContainer(PersistenceService.shared.modelContainer)
         }
-        #if os(macOS)
         .windowStyle(.titleBar)
         .defaultSize(width: 800, height: 600)
-        #endif
     }
 }

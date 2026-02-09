@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Detail view for a recording with segmented navigation
 struct RecordingDetailView: View {
-    let recording: RecordingModel
+    let recording: SDRecording
     let className: String
 
     @State private var selectedTab: DetailTab = .transcript
@@ -43,9 +43,7 @@ struct RecordingDetailView: View {
             // Content
             tabContent
         }
-        #if os(macOS)
         .frame(minWidth: 600, minHeight: 500)
-        #endif
     }
 
     // MARK: - Header
@@ -66,13 +64,11 @@ struct RecordingDetailView: View {
 
             Spacer()
 
-            #if os(macOS)
             Button("Done") {
                 dismiss()
             }
             .buttonStyle(.borderedProminent)
             .tint(SpongeTheme.coral)
-            #endif
         }
         .padding(SpongeTheme.spacingM)
     }
@@ -388,7 +384,7 @@ private struct MarkerCountBadge: View {
 
 #Preview {
     RecordingDetailView(
-        recording: RecordingModel(
+        recording: SDRecording(
             classId: UUID(),
             duration: 3600,
             audioFileName: "test.m4a",

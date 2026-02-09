@@ -6,16 +6,7 @@
 	<string>Sponge needs access to the microphone to record your lectures.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Sponge needs speech recognition to transcribe your recordings in real-time.</string>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>com.googleusercontent.apps.145011317257-k0pijk1c04ihu4qjp4t9a4f6ltd2ndhq</string>
-			</array>
-			<key>CFBundleURLName</key>
-			<string>Google Sign-In Callback</string>
-		</dict>
-	</array>
+	<key>NSCalendarsUsageDescription</key>
+	<string>Sponge can automatically detect your class schedule to help organize recordings.</string>
 </dict>
 </plist>

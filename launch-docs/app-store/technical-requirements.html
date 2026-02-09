@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚙️ Technical Requirements - Sponge Launch</title>
+    <link rel="stylesheet" href="../assets/docs.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="../index.html">← Back to Hub</a>
+        <h1>⚙️ Technical Requirements</h1>
+    </nav>
+    
+    <div class="container">
+        <div class="doc-header">
+            <h1>⚙️ Technical Requirements</h1>
+            <div class="meta">
+                <span class="badge info">Critical Reference</span>
+            </div>
+        </div>
+
+        
+<div class="alert alert-info">
+    This document outlines all technical requirements for successful App Store submission.
+</div>
+
+<div class="phase-section">
+    <h2>⚙️ System Requirements</h2>
+    <ul>
+        <li><strong>Target OS:</strong> macOS 14.0 or later</li>
+        <li><strong>Architecture:</strong> Apple Silicon (arm64) and Intel (x86_64)</li>
+        <li><strong>SDK:</strong> Latest macOS SDK in Xcode 15+</li>
+        <li><strong>Swift Version:</strong> Swift 5.9 or later</li>
+    </ul>
+</div>
+
+<div class="phase-section">
+    <h2>🔐 Entitlements & Capabilities</h2>
+    <h3>Required Entitlements</h3>
+    <pre><code>com.apple.security.app-sandbox
+com.apple.security.device.microphone
+com.apple.security.file.user-selected.read-write
+com.apple.security.files.bookmarks.app-scope</code></pre>
+
+    <h3>Privacy Manifest (Info.plist)</h3>
+    <div class="info-box">
+        <h4>Required Privacy Keys</h4>
+        <ul>
+            <li><strong>NSMicrophoneUsageDescription:</strong> "Sponge needs access to the microphone to record your lectures."</li>
+            <li><strong>NSSpeechRecognitionUsageDescription:</strong> "Sponge needs speech recognition to transcribe your recordings in real-time."</li>
+            <li><strong>NSCalendarsUsageDescription:</strong> "Sponge can automatically detect your class schedule to help organize recordings."</li>
+        </ul>
+    </div>
+</div>
+
+<div class="phase-section">
+    <h2>🎯 Bundle Identifier</h2>
+    <div class="blocker-card">
+        <h3>Current Status</h3>
+        <p><strong>Current:</strong> <code>com.example.ClassTranscriber</code> (invalid for App Store)</p>
+        <p><strong>Required:</strong> Production domain owned by you</p>
+        
+        <h4>Recommended Options</h4>
+        <ul>
+            <li><code>com.yourdomain.Sponge</code></li>
+            <li><code>app.sponge.ios</code></li>
+            <li><code>io.yourdomain.Sponge</code></li>
+        </ul>
+    </div>
+</div>
+
+<div class="phase-section">
+    <h2>🔒 Data & Privacy Compliance</h2>
+    
+    <h3>Data Handling</h3>
+    <table>
+        <tr>
+            <th>Data Type</th>
+            <th>Storage</th>
+        </tr>
+        <tr>
+            <td>Audio Recordings</td>
+            <td>Local (Documents/Sponge folder, sandboxed)</td>
+        </tr>
+        <tr>
+            <td>Transcripts</td>
+            <td>SwiftData local database</td>
+        </tr>
+        <tr>
+            <td>User Notes</td>
+            <td>SwiftData local database</td>
+        </tr>
+        <tr>
+            <td>AI Responses</td>
+            <td>Cached in SwiftData (from Gemini API)</td>
+        </tr>
+        <tr>
+            <td>API Keys</td>
+            <td>Keychain (secure, encrypted)</td>
+        </tr>
+    </table>
+
+    <div class="alert alert-success">
+        <strong>Privacy-First:</strong> No analytics, crash reporting, or usage tracking. User data stays local.
+    </div>
+</div>
+
+<div class="phase-section">
+    <h2>✅ Testing Requirements</h2>
+    
+    <h3>Before Submission</h3>
+    <div class="checklist">
+        <label><input type="checkbox"> Recording audio from microphone works</label>
+        <label><input type="checkbox"> Real-time transcription without errors</label>
+        <label><input type="checkbox"> AI generation with test API key</label>
+        <label><input type="checkbox"> PDF export with correct formatting</label>
+        <label><input type="checkbox"> Calendar integration (if enabled)</label>
+        <label><input type="checkbox"> All permission prompts appear correctly</label>
+        <label><input type="checkbox"> Test on both Apple Silicon and Intel Macs</label>
+        <label><input type="checkbox"> Test long recordings (30+ minutes)</label>
+    </div>
+</div>
+
+
+        <div class="cta-section">
+            <a href="../index.html" class="btn-primary">Back to Launch Hub</a>
+        </div>
+    </div>
+
+    <footer>
+        <p>Last updated: February 7, 2026</p>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📱 TestFlight Setup - Sponge Launch</title>
+    <link rel="stylesheet" href="../assets/docs.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="../index.html">← Back to Hub</a>
+        <h1>📱 TestFlight Setup</h1>
+    </nav>
+    
+    <div class="container">
+        <div class="doc-header">
+            <h1>📱 TestFlight Setup</h1>
+            <div class="meta">
+                <span class="badge info">Configuration Guide</span>
+            </div>
+        </div>
+
+        
+<div class="alert alert-info">
+    Complete guide for setting up and managing TestFlight for Sponge beta testing.
+</div>
+
+<div class="phase-section">
+    <h2>🚀 TestFlight Overview</h2>
+    
+    <h3>Why TestFlight?</h3>
+    <div class="metric-grid">
+        <div class="metric-card">
+            <h4>✅ Advantages</h4>
+            <ul style="margin-top: 10px;">
+                <li>Easy distribution via link</li>
+                <li>No profile management</li>
+                <li>Automatic updates</li>
+                <li>Built-in crash reporting</li>
+                <li>Supports 10,000 testers</li>
+                <li>Free (included in Developer Program)</li>
+            </ul>
+        </div>
+        <div class="metric-card">
+            <h4>⚠️ Limitations</h4>
+            <ul style="margin-top: 10px;">
+                <li>90-day build expiration</li>
+                <li>24-48hr review for external testing</li>
+                <li>Can't distribute old builds</li>
+                <li>No direct messaging with testers</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="phase-section">
+    <h2>📋 Setup Steps</h2>
+    
+    <h3>Step 1: App Store Connect Setup</h3>
+    <div class="checklist">
+        <label><input type="checkbox"> Log in to appstoreconnect.apple.com</label>
+        <label><input type="checkbox"> Create app record (if not already created)</label>
+        <label><input type="checkbox"> Complete Privacy Policy URL</label>
+        <label><input type="checkbox"> Complete Support URL</label>
+        <label><input type="checkbox"> Set Category to Education</label>
+    </div>
+    
+    <h3>Step 2: Upload Beta Build</h3>
+    <div class="checklist">
+        <label><input type="checkbox"> Archive app in Xcode</label>
+        <label><input type="checkbox"> Validate archive</label>
+        <label><input type="checkbox"> Upload to App Store Connect</label>
+        <label><input type="checkbox"> Wait for processing (15-30 min)</label>
+        <label><input type="checkbox"> Complete build information</label>
+    </div>
+    
+    <h3>Step 3: Configure Tester Groups</h3>
+    
+    <div class="info-box">
+        <h4>Internal Testing (Immediate Access)</h4>
+        <p>For 5-20 people (team, close friends, beta users you trust)</p>
+        <ul style="margin-top: 10px;">
+            <li>Add testers by email/Apple ID</li>
+            <li>No Apple review required</li>
+            <li>Immediate access to builds</li>
+        </ul>
+    </div>
+    
+    <div class="info-box">
+        <h4>External Testing (Requires Review)</h4>
+        <p>For wider testing (requires 24-48hr Apple review)</p>
+        <ul style="margin-top: 10px;">
+            <li>Create testing groups</li>
+            <li>Add testers via email or public link</li>
+            <li>First build requires Apple review</li>
+            <li>Can support up to 10,000 testers</li>
+        </ul>
+    </div>
+</div>
+
+<div class="phase-section">
+    <h2>📊 Managing Builds</h2>
+    
+    <h3>Uploading New Builds</h3>
+    <pre><code># Archive in Xcode
+cd Sponge
+xcodebuild -scheme Sponge \
+  -configuration Release \
+  -archivePath Sponge.xcarchive \
+  archive
+
+# Then upload via Xcode Organizer or Transporter</code></pre>
+    
+    <h3>Versioning</h3>
+    <ul>
+        <li><strong>MARKETING_VERSION:</strong> 1.0.0 → 1.0.1 for bug fix</li>
+        <li><strong>CURRENT_PROJECT_VERSION:</strong> 1 → 2 for second build</li>
+    </ul>
+</div>
+
+<div class="phase-section">
+    <h2>📈 Crash Reports & Analytics</h2>
+    
+    <h3>Accessing Crash Data</h3>
+    <ol style="margin-left: 20px;">
+        <li>Go to app → TestFlight</li>
+        <li>Click "Crashes" tab</li>
+        <li>View by frequency, device/OS, stack trace</li>
+    </ol>
+    
+    <h3>Responding to Crashes</h3>
+    <div class="checklist">
+        <label><input type="checkbox"> Identify root cause from stack trace</label>
+        <label><input type="checkbox"> Reproduce locally</label>
+        <label><input type="checkbox"> Fix issue in code</label>
+        <label><input type="checkbox"> Add error handling</label>
+        <label><input type="checkbox"> Rebuild and resubmit</label>
+    </div>
+</div>
+
+
+        <div class="cta-section">
+            <a href="../index.html" class="btn-primary">Back to Launch Hub</a>
+        </div>
+    </div>
+
+    <footer>
+        <p>Last updated: February 7, 2026</p>
+    </footer>
+</body>
+</html>

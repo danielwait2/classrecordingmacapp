@@ -4,26 +4,23 @@ struct ClassModel: Identifiable, Codable, Hashable {
     let id: UUID
     var name: String
     var folderBookmark: Data?
-    var googleDriveFolder: GoogleDriveFolderInfo?
     var saveDestination: SaveDestination
 
     init(
         id: UUID = UUID(),
         name: String,
         folderBookmark: Data? = nil,
-        googleDriveFolder: GoogleDriveFolderInfo? = nil,
         saveDestination: SaveDestination = .localOnly
     ) {
         self.id = id
         self.name = name
         self.folderBookmark = folderBookmark
-        self.googleDriveFolder = googleDriveFolder
         self.saveDestination = saveDestination
     }
 
     // MARK: - Codable
 
-    // Custom decoding to handle migration from old data without new fields
+    // Custom decoding to handle migration from old data that had Google fields
     enum CodingKeys: String, CodingKey {
         case id, name, folderBookmark, googleDriveFolder, saveDestination
     }
@@ -33,9 +30,16 @@ struct ClassModel: Identifiable, Codable, Hashable {
         id = try container.decode(UUID.self, forKey: .id)
         name = try container.decode(String.self, forKey: .name)
         folderBookmark = try container.decodeIfPresent(Data.self, forKey: .folderBookmark)
-        googleDriveFolder = try container.decodeIfPresent(GoogleDriveFolderInfo.self, forKey: .googleDriveFolder)
-        // Default to localOnly for existing data that doesn't have saveDestination
+        // Ignore old googleDriveFolder field if present
         saveDestination = try container.decodeIfPresent(SaveDestination.self, forKey: .saveDestination) ?? .localOnly
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(name, forKey: .name)
+        try container.encodeIfPresent(folderBookmark, forKey: .folderBookmark)
+        try container.encode(saveDestination, forKey: .saveDestination)
     }
 
     // MARK: - Folder Resolution
@@ -45,17 +49,10 @@ struct ClassModel: Identifiable, Codable, Hashable {
 
         var isStale = false
         do {
-            #if os(macOS)
             let url = try URL(resolvingBookmarkData: bookmarkData,
                               options: .withSecurityScope,
                               relativeTo: nil,
                               bookmarkDataIsStale: &isStale)
-            #else
-            let url = try URL(resolvingBookmarkData: bookmarkData,
-                              options: [],
-                              relativeTo: nil,
-                              bookmarkDataIsStale: &isStale)
-            #endif
 
             if isStale {
                 return nil
@@ -69,15 +66,9 @@ struct ClassModel: Identifiable, Codable, Hashable {
 
     static func createBookmark(for url: URL) -> Data? {
         do {
-            #if os(macOS)
             return try url.bookmarkData(options: .withSecurityScope,
                                          includingResourceValuesForKeys: nil,
                                          relativeTo: nil)
-            #else
-            return try url.bookmarkData(options: .minimalBookmark,
-                                         includingResourceValuesForKeys: nil,
-                                         relativeTo: nil)
-            #endif
         } catch {
             print("Failed to create bookmark: \(error)")
             return nil
@@ -86,25 +77,13 @@ struct ClassModel: Identifiable, Codable, Hashable {
 
     // MARK: - Validation
 
-    /// Checks if the class has all required destinations configured
+    /// Checks if the class has a valid local folder configured
     var isConfigurationValid: Bool {
-        switch saveDestination {
-        case .localOnly:
-            return folderBookmark != nil && resolveFolder() != nil
-        case .googleDriveOnly:
-            return googleDriveFolder != nil
-        case .both:
-            return (folderBookmark != nil && resolveFolder() != nil) && googleDriveFolder != nil
-        }
-    }
-
-    /// Checks if local folder is configured (when needed)
-    var hasLocalFolder: Bool {
         folderBookmark != nil && resolveFolder() != nil
     }
 
-    /// Checks if Google Drive folder is configured (when needed)
-    var hasGoogleDriveFolder: Bool {
-        googleDriveFolder != nil
+    /// Checks if local folder is configured
+    var hasLocalFolder: Bool {
+        folderBookmark != nil && resolveFolder() != nil
     }
 }

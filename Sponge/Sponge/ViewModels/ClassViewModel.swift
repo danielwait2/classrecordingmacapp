@@ -1,81 +1,58 @@
 import Foundation
 import SwiftUI
+import SwiftData
+import os
 
+@MainActor
 class ClassViewModel: ObservableObject {
-    @Published var classes: [ClassModel] = []
-    @Published var recordings: [RecordingModel] = []
-    @Published var selectedClass: ClassModel?
+    @Published var classes: [SDClass] = []
+    @Published var recordings: [SDRecording] = []
+    @Published var selectedClass: SDClass?
+    @Published var lastError: String?
 
-    private let classesKey = "savedClasses"
-    private let recordingsKey = "savedRecordings"
+    private let logger = Logger(subsystem: "com.sponge.app", category: "ClassViewModel")
+    private let persistence = PersistenceService.shared
 
     init() {
+        // Migrate legacy data on first launch
+        persistence.migrateFromUserDefaultsIfNeeded()
         loadClasses()
         loadRecordings()
     }
 
     // MARK: - Class Management
 
-    func addClass(
-        name: String,
-        folderURL: URL?,
-        googleDriveFolder: GoogleDriveFolderInfo? = nil,
-        saveDestination: SaveDestination = .localOnly
-    ) {
-        var bookmark: Data?
-        if let url = folderURL {
-            bookmark = ClassModel.createBookmark(for: url)
-        }
-
-        let newClass = ClassModel(
-            name: name,
-            folderBookmark: bookmark,
-            googleDriveFolder: googleDriveFolder,
-            saveDestination: saveDestination
-        )
+    func addClass(name: String, folderURL: URL?) {
+        let newClass = persistence.addClass(name: name, folderURL: folderURL)
         classes.append(newClass)
-        saveClasses()
 
         if selectedClass == nil {
             selectedClass = newClass
         }
     }
 
-    func updateClass(
-        _ classModel: ClassModel,
-        name: String,
-        folderURL: URL?,
-        googleDriveFolder: GoogleDriveFolderInfo? = nil,
-        saveDestination: SaveDestination? = nil
-    ) {
-        guard let index = classes.firstIndex(where: { $0.id == classModel.id }) else { return }
+    func updateClass(_ classModel: SDClass, name: String, folderURL: URL?) {
+        persistence.updateClass(classModel, name: name, folderURL: folderURL)
 
-        var bookmark: Data?
-        if let url = folderURL {
-            bookmark = ClassModel.createBookmark(for: url)
-        }
-
-        classes[index].name = name
-        classes[index].folderBookmark = bookmark
-        classes[index].googleDriveFolder = googleDriveFolder
-
-        if let destination = saveDestination {
-            classes[index].saveDestination = destination
-        }
-
-        saveClasses()
+        // Refresh the list
+        loadClasses()
 
         if selectedClass?.id == classModel.id {
-            selectedClass = classes[index]
+            selectedClass = classModel
         }
     }
 
-    func deleteClass(_ classModel: ClassModel) {
+    func deleteClass(_ classModel: SDClass) {
+        // Also delete associated recordings
+        let classRecordings = recordings.filter { $0.classId == classModel.id }
+        for recording in classRecordings {
+            persistence.deleteRecording(recording)
+        }
+
+        persistence.deleteClass(classModel)
+
         classes.removeAll { $0.id == classModel.id }
         recordings.removeAll { $0.classId == classModel.id }
-
-        saveClasses()
-        saveRecordings()
 
         if selectedClass?.id == classModel.id {
             selectedClass = classes.first
@@ -84,28 +61,25 @@ class ClassViewModel: ObservableObject {
 
     // MARK: - Recording Management
 
-    func addRecording(_ recording: RecordingModel) {
+    func addRecording(_ recording: SDRecording) {
+        persistence.addRecording(recording)
         recordings.append(recording)
-        saveRecordings()
     }
 
-    func updateRecording(_ recording: RecordingModel) {
-        guard let index = recordings.firstIndex(where: { $0.id == recording.id }) else { return }
-        recordings[index] = recording
-        saveRecordings()
-    }
-
-    func deleteRecording(_ recording: RecordingModel) {
-        // Delete audio file
-        if let audioURL = recording.audioFileURL() {
-            try? FileManager.default.removeItem(at: audioURL)
+    func updateRecording(_ recording: SDRecording) {
+        persistence.saveContext()
+        // Refresh
+        if let index = recordings.firstIndex(where: { $0.id == recording.id }) {
+            recordings[index] = recording
         }
-
-        recordings.removeAll { $0.id == recording.id }
-        saveRecordings()
     }
 
-    func recordingsForSelectedClass() -> [RecordingModel] {
+    func deleteRecording(_ recording: SDRecording) {
+        persistence.deleteRecording(recording)
+        recordings.removeAll { $0.id == recording.id }
+    }
+
+    func recordingsForSelectedClass() -> [SDRecording] {
         guard let selectedClass = selectedClass else { return [] }
         return recordings.filter { $0.classId == selectedClass.id }.sorted { $0.date > $1.date }
     }
@@ -114,32 +88,16 @@ class ClassViewModel: ObservableObject {
         return classes.first { $0.id == classId }?.name ?? "Unknown Class"
     }
 
-    // MARK: - Persistence
-
-    private func saveClasses() {
-        if let encoded = try? JSONEncoder().encode(classes) {
-            UserDefaults.standard.set(encoded, forKey: classesKey)
-        }
-    }
+    // MARK: - Data Loading
 
     private func loadClasses() {
-        if let data = UserDefaults.standard.data(forKey: classesKey),
-           let decoded = try? JSONDecoder().decode([ClassModel].self, from: data) {
-            classes = decoded
+        classes = persistence.fetchClasses()
+        if selectedClass == nil {
             selectedClass = classes.first
         }
     }
 
-    private func saveRecordings() {
-        if let encoded = try? JSONEncoder().encode(recordings) {
-            UserDefaults.standard.set(encoded, forKey: recordingsKey)
-        }
-    }
-
     private func loadRecordings() {
-        if let data = UserDefaults.standard.data(forKey: recordingsKey),
-           let decoded = try? JSONDecoder().decode([RecordingModel].self, from: data) {
-            recordings = decoded
-        }
+        recordings = persistence.fetchAllRecordings()
     }
 }

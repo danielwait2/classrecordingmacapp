@@ -87,7 +87,7 @@ struct RecordingsListView: View {
 // MARK: - Recording Row View
 
 struct RecordingRowView: View {
-    let recording: RecordingModel
+    let recording: SDRecording
     @ObservedObject var classViewModel: ClassViewModel
     @State private var showingDetail = false
     @State private var showingEditSheet = false
@@ -294,29 +294,14 @@ struct RecordingRowView: View {
         let pdfFileName = generatePDFFileName(className: classModel.name, date: recording.date)
         var pdfURL: URL?
 
-        // Check save destination
-        switch classModel.saveDestination {
-        case .localOnly, .both:
-            if let localURL = classModel.resolveFolder() {
-                pdfURL = localURL.appendingPathComponent(pdfFileName)
-            }
-        case .googleDriveOnly:
-            // For Google Drive, we can't reveal in Finder, show a message
-            #if os(macOS)
-            NSWorkspace.shared.open(URL(string: "https://drive.google.com")!)
-            #endif
-            return
+        // Resolve local folder
+        if let localURL = classModel.resolveFolder() {
+            pdfURL = localURL.appendingPathComponent(pdfFileName)
         }
 
         // Reveal in Finder (macOS) or Files (iOS)
         if let pdfURL = pdfURL, FileManager.default.fileExists(atPath: pdfURL.path) {
-            #if os(macOS)
             NSWorkspace.shared.activateFileViewerSelecting([pdfURL])
-            #else
-            // iOS: Open the Files app to the document directory
-            let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-            UIApplication.shared.open(documentsURL)
-            #endif
         }
     }
 
@@ -339,7 +324,7 @@ struct RecordingRowView: View {
 // MARK: - Transcript Detail View
 
 struct TranscriptDetailView: View {
-    let recording: RecordingModel
+    let recording: SDRecording
     @ObservedObject var classViewModel: ClassViewModel
     @Environment(\.dismiss) private var dismiss
     @State private var showingEditSheet = false
@@ -388,9 +373,6 @@ struct TranscriptDetailView: View {
             }
             .background(Color.primaryBackground)
             .navigationTitle(recording.name)
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button {
@@ -410,9 +392,7 @@ struct TranscriptDetailView: View {
                 RecordingEditorView(recording: recording, classViewModel: classViewModel)
             }
         }
-        #if os(macOS)
         .frame(minWidth: 550, minHeight: 450)
-        #endif
     }
 }
 
@@ -437,7 +417,7 @@ struct MetadataRow: View {
 // MARK: - Recording Editor View
 
 struct RecordingEditorView: View {
-    let recording: RecordingModel
+    let recording: SDRecording
     @ObservedObject var classViewModel: ClassViewModel
     @Environment(\.dismiss) private var dismiss
 
@@ -480,9 +460,6 @@ struct RecordingEditorView: View {
                 }
             }
             .navigationTitle("Rename Recording")
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
@@ -501,9 +478,7 @@ struct RecordingEditorView: View {
                 name = recording.name
             }
         }
-        #if os(macOS)
         .frame(minWidth: 400, minHeight: 350)
-        #endif
     }
 
     private func saveChanges() {

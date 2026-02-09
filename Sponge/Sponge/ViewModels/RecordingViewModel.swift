@@ -22,7 +22,6 @@ class RecordingViewModel: ObservableObject {
 
     let audioService = AudioRecordingService()
     let transcriptionService = TranscriptionService()
-    private let driveService = GoogleDriveService.shared
     private let geminiService = GeminiService.shared
 
     private var currentAudioURL: URL?
@@ -95,35 +94,23 @@ class RecordingViewModel: ObservableObject {
             self.transcribedText = ""
         }
 
-        // On macOS, start transcription FIRST so the buffer handler is set up
+        // Start transcription FIRST so the buffer handler is set up
         // before SharedAudioManager starts sending audio buffers
-        #if os(macOS)
         if realtimeTranscription {
             transcriptionService.startTranscribing()
         }
-        #endif
 
         guard let audioURL = audioService.startRecording() else {
             DispatchQueue.main.async {
                 self.errorMessage = self.audioService.lastError ?? "Failed to start recording"
             }
-            // Stop transcription if recording failed
-            #if os(macOS)
             if realtimeTranscription {
                 transcriptionService.stopTranscribing()
             }
-            #endif
             return
         }
 
         currentAudioURL = audioURL
-
-        // On iOS, start transcription after recording (works alongside AVAudioRecorder)
-        #if os(iOS)
-        if realtimeTranscription {
-            transcriptionService.startTranscribing()
-        }
-        #endif
 
         DispatchQueue.main.async {
             self.isRecording = true
@@ -151,7 +138,7 @@ class RecordingViewModel: ObservableObject {
         }
     }
 
-    func stopRecording(classModel: ClassModel, classViewModel: ClassViewModel) {
+    func stopRecording(classModel: SDClass, classViewModel: ClassViewModel) {
         guard let result = audioService.stopRecording() else {
             DispatchQueue.main.async {
                 self.errorMessage = "Failed to stop recording"
@@ -203,105 +190,94 @@ class RecordingViewModel: ObservableObject {
         userNotes: String,
         intentMarkers: [IntentMarker],
         catchUpSummaries: [CatchUpSummary],
-        classModel: ClassModel,
+        classModel: SDClass,
         classViewModel: ClassViewModel
     ) {
-        var recording = RecordingModel(
+        let recording = SDRecording(
             classId: classId,
             date: date,
             duration: duration,
             audioFileName: audioFileName,
             transcriptText: transcript,
             userNotes: userNotes,
-            name: RecordingModel.generateDefaultName(className: classModel.name, date: date),
+            classNotes: nil,
+            pdfExported: false,
+            name: SDRecording.generateDefaultName(className: classModel.name, date: date),
             intentMarkers: intentMarkers,
             catchUpSummaries: catchUpSummaries
         )
 
-        classViewModel.addRecording(recording)
+        Task { @MainActor in
+            classViewModel.addRecording(recording)
 
-        // Generate class notes and enhanced summaries if enabled
-        if autoGenerateClassNotes && !transcript.isEmpty {
-            Task {
-                await generateEnhancedContent(for: &recording, classModel: classModel, classViewModel: classViewModel)
+            // Generate class notes and enhanced summaries if enabled
+            if self.autoGenerateClassNotes && !transcript.isEmpty {
+                await self.generateEnhancedContent(for: recording, classModel: classModel, classViewModel: classViewModel)
+            } else {
+                // Export PDF immediately if notes generation is disabled
+                self.exportPDF(for: recording, classModel: classModel, classViewModel: classViewModel)
             }
-        } else {
-            // Export PDF immediately if notes generation is disabled
-            exportPDF(for: recording, classModel: classModel, classViewModel: classViewModel)
         }
     }
 
     // MARK: - Enhanced Content Generation
 
-    private func generateEnhancedContent(for recording: inout RecordingModel, classModel: ClassModel, classViewModel: ClassViewModel) async {
+    private func generateEnhancedContent(for recording: SDRecording, classModel: SDClass, classViewModel: ClassViewModel) async {
         await MainActor.run {
             self.isGeneratingNotes = true
         }
 
-        // Capture values to avoid referencing inout parameter in concurrent code
         let transcriptText = recording.transcriptText
         let userNotesText = recording.userNotes
         let markers = recording.intentMarkers
 
-        // Get user preferences for note style and summary length
         let noteStyleRaw = UserDefaults.standard.string(forKey: "noteStyle") ?? NoteStyle.detailed.rawValue
         let summaryLengthRaw = UserDefaults.standard.string(forKey: "summaryLength") ?? SummaryLength.comprehensive.rawValue
         let noteStyle = NoteStyle(rawValue: noteStyleRaw) ?? .detailed
         let summaryLength = SummaryLength(rawValue: summaryLengthRaw) ?? .comprehensive
 
-        var updatedRecording = recording
-
         do {
-            // Generate traditional class notes (for PDF compatibility)
-            let classNotes = try await geminiService.generateClassNotes(
+            // Run AI generation tasks in parallel for ~2-3x speedup
+            let shouldGenerateRecall = generateRecallPrompts
+
+            async let classNotesTask = geminiService.generateClassNotes(
                 from: transcriptText,
                 userNotes: userNotesText,
                 noteStyle: noteStyle,
                 summaryLength: summaryLength
             )
-            updatedRecording.classNotes = classNotes
 
-            // Generate enhanced summaries with marker-focused content
-            let enhancedSummary = try await geminiService.generateEnhancedSummaries(
+            async let enhancedSummaryTask = geminiService.generateEnhancedSummaries(
                 from: transcriptText,
                 markers: markers,
                 userNotes: userNotesText
             )
-            updatedRecording.enhancedSummary = enhancedSummary
 
-            // Generate recall prompts if enabled
-            if generateRecallPrompts {
-                let recallPrompts = try await geminiService.generateRecallPrompts(
-                    from: transcriptText,
-                    markers: markers
-                )
-                updatedRecording.recallPrompts = recallPrompts
-            }
+            async let recallPromptsTask: RecallPrompts? = shouldGenerateRecall
+                ? try await geminiService.generateRecallPrompts(from: transcriptText, markers: markers)
+                : nil
 
-            recording = updatedRecording
-
-            // Create a local copy for use in MainActor closure
-            let finalRecording = updatedRecording
+            let classNotes = try await classNotesTask
+            let enhancedSummary = try await enhancedSummaryTask
+            let recallPrompts = try await recallPromptsTask
 
             await MainActor.run {
-                classViewModel.updateRecording(finalRecording)
+                recording.classNotes = classNotes
+                recording.enhancedSummary = enhancedSummary
+                recording.recallPrompts = recallPrompts
+
+                classViewModel.updateRecording(recording)
                 self.isGeneratingNotes = false
 
-                // Export PDF with class notes
-                self.exportPDF(for: finalRecording, classModel: classModel, classViewModel: classViewModel)
+                self.exportPDF(for: recording, classModel: classModel, classViewModel: classViewModel)
             }
 
         } catch {
-            // Create a local copy for use in MainActor closure
-            let finalRecording = recording
-
-            // On error, show message but keep original transcript and export without notes
             await MainActor.run {
                 self.isGeneratingNotes = false
                 self.errorMessage = error.localizedDescription
 
-                // Still export PDF with just the transcript
-                self.exportPDF(for: finalRecording, classModel: classModel, classViewModel: classViewModel)
+                self.exportPDF(for: recording, classModel: classModel, classViewModel: classViewModel)
             }
         }
     }
@@ -334,12 +310,6 @@ class RecordingViewModel: ObservableObject {
         DispatchQueue.main.async {
             self.intentMarkers.append(marker)
         }
-
-        // Haptic feedback on iOS
-        #if os(iOS)
-        let generator = UIImpactFeedbackGenerator(style: .medium)
-        generator.impactOccurred()
-        #endif
     }
 
     /// Gets the last N words from the transcript
@@ -405,163 +375,89 @@ class RecordingViewModel: ObservableObject {
 
     // MARK: - PDF Export
 
-    private func exportPDF(for recording: RecordingModel, classModel: ClassModel, classViewModel: ClassViewModel) {
-        // Check if any export is needed
-        guard classModel.saveDestination.requiresLocalFolder || classModel.saveDestination.requiresGoogleDrive else {
+    private func exportPDF(for recording: SDRecording, classModel: SDClass, classViewModel: ClassViewModel) {
+        guard classModel.hasLocalFolder else {
             return
         }
 
-        // Generate PDF data (with user notes and class notes if available)
-        guard let pdfData = PDFExportService.generatePDF(
-            className: classModel.name,
-            date: recording.date,
-            duration: recording.duration,
-            transcriptText: recording.transcriptText,
-            userNotes: recording.userNotes,
-            classNotes: recording.classNotes
-        ) else {
-            DispatchQueue.main.async {
-                self.errorMessage = "Failed to generate PDF"
-            }
-            return
-        }
-
-        let fileName = generateFileName(className: classModel.name, date: recording.date)
+        // Capture values for background thread
+        let className = classModel.name
+        let recordingDate = recording.date
+        let recordingDuration = recording.duration
+        let transcriptText = recording.transcriptText
+        let userNotes = recording.userNotes
+        let classNotes = recording.classNotes
 
         DispatchQueue.main.async {
             self.isExporting = true
         }
 
-        // Create a task group to handle exports
-        Task {
-            // Track export results
+        Task.detached(priority: .userInitiated) { [weak self] in
+            guard let self = self else { return }
+
+            guard let pdfData = PDFExportService.generatePDF(
+                className: className,
+                date: recordingDate,
+                duration: recordingDuration,
+                transcriptText: transcriptText,
+                userNotes: userNotes,
+                classNotes: classNotes
+            ) else {
+                await MainActor.run {
+                    self.isExporting = false
+                    self.errorMessage = "Failed to generate PDF"
+                }
+                return
+            }
+
+            let fileName = self.generateFileName(className: className, date: recordingDate)
+
             var localSuccess = false
-            var driveSuccess = false
-
-            // Export to local folder if configured
-            if classModel.saveDestination.requiresLocalFolder {
-                if let folderURL = classModel.resolveFolder() {
-                    localSuccess = PDFExportService.savePDF(data: pdfData, to: folderURL, fileName: fileName)
-                }
+            if let folderURL = classModel.resolveFolder() {
+                localSuccess = PDFExportService.savePDF(data: pdfData, to: folderURL, fileName: fileName)
             }
 
-            // Export to Google Drive if configured
-            if classModel.saveDestination.requiresGoogleDrive {
-                if let driveFolder = classModel.googleDriveFolder {
-                    do {
-                        _ = try await driveService.uploadPDF(
-                            data: pdfData,
-                            fileName: fileName,
-                            toFolderId: driveFolder.folderId
-                        )
-                        driveSuccess = true
-                    } catch {
-                        print("Drive upload failed: \(error)")
-                    }
-                }
-            }
-
-            // Capture final values for main thread
-            let finalLocalSuccess = localSuccess
-            let finalDriveSuccess = driveSuccess
-
-            // Update recording and show toast on main thread
             await MainActor.run {
                 self.isExporting = false
 
-                // Update recording with export status
-                var updatedRecording = recording
-                updatedRecording.pdfExported = finalLocalSuccess || finalDriveSuccess
-                classViewModel.updateRecording(updatedRecording)
+                recording.pdfExported = localSuccess
+                classViewModel.updateRecording(recording)
 
-                // Show appropriate toast
-                let message = self.createExportMessage(
-                    saveDestination: classModel.saveDestination,
-                    localSuccess: finalLocalSuccess,
-                    driveSuccess: finalDriveSuccess,
-                    localFolderName: classModel.resolveFolder()?.lastPathComponent,
-                    driveFolderName: classModel.googleDriveFolder?.folderName
-                )
-
-                let overallSuccess = self.isExportSuccessful(
-                    saveDestination: classModel.saveDestination,
-                    localSuccess: finalLocalSuccess,
-                    driveSuccess: finalDriveSuccess
-                )
-
-                self.toastMessage = ToastMessage(
-                    message: message,
-                    icon: overallSuccess ? "checkmark.circle.fill" : "exclamationmark.triangle.fill",
-                    type: overallSuccess ? .success : .error
-                )
+                if localSuccess {
+                    self.toastMessage = ToastMessage(
+                        message: "PDF saved to \(classModel.resolveFolder()?.lastPathComponent ?? "folder")",
+                        icon: "checkmark.circle.fill",
+                        type: .success
+                    )
+                } else {
+                    self.toastMessage = ToastMessage(
+                        message: "Failed to save PDF locally",
+                        icon: "exclamationmark.triangle.fill",
+                        type: .error
+                    )
+                }
             }
         }
     }
+
+    private static let fileNameDateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
+
+    private static let fileNameTimeFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "h-mma"
+        f.amSymbol = "am"
+        f.pmSymbol = "pm"
+        return f
+    }()
 
     private func generateFileName(className: String, date: Date) -> String {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd"
-        let datePart = dateFormatter.string(from: date)
-
-        let timeFormatter = DateFormatter()
-        timeFormatter.dateFormat = "h-mma"  // 1-45PM format (using dash since colon isn't allowed in filenames)
-        timeFormatter.amSymbol = "am"
-        timeFormatter.pmSymbol = "pm"
-        let timePart = timeFormatter.string(from: date)
-
+        let datePart = Self.fileNameDateFormatter.string(from: date)
+        let timePart = Self.fileNameTimeFormatter.string(from: date)
         return "\(className)_\(datePart)_\(timePart)"
-    }
-
-    private func createExportMessage(
-        saveDestination: SaveDestination,
-        localSuccess: Bool,
-        driveSuccess: Bool,
-        localFolderName: String?,
-        driveFolderName: String?
-    ) -> String {
-        switch saveDestination {
-        case .localOnly:
-            if localSuccess {
-                return "PDF saved to \(localFolderName ?? "folder")"
-            } else {
-                return "Failed to save PDF locally"
-            }
-
-        case .googleDriveOnly:
-            if driveSuccess {
-                return "PDF uploaded to \(driveFolderName ?? "Google Drive")"
-            } else {
-                return "Failed to upload PDF to Drive"
-            }
-
-        case .both:
-            switch (localSuccess, driveSuccess) {
-            case (true, true):
-                return "PDF saved locally and uploaded to Drive"
-            case (true, false):
-                return "PDF saved locally (Drive upload failed)"
-            case (false, true):
-                return "PDF uploaded to Drive (local save failed)"
-            case (false, false):
-                return "Failed to save PDF"
-            }
-        }
-    }
-
-    private func isExportSuccessful(
-        saveDestination: SaveDestination,
-        localSuccess: Bool,
-        driveSuccess: Bool
-    ) -> Bool {
-        switch saveDestination {
-        case .localOnly:
-            return localSuccess
-        case .googleDriveOnly:
-            return driveSuccess
-        case .both:
-            // Success if at least one destination worked
-            return localSuccess || driveSuccess
-        }
     }
 
     private func reset() {

@@ -2,7 +2,7 @@ import SwiftUI
 
 /// View for practicing recall with generated questions
 struct RecallPromptsView: View {
-    let recording: RecordingModel
+    let recording: SDRecording
 
     @State private var viewMode: ViewMode = .list
     @State private var currentCardIndex = 0
@@ -406,7 +406,7 @@ private struct FlashcardView: View {
 
 #Preview {
     RecallPromptsView(
-        recording: RecordingModel(
+        recording: SDRecording(
             classId: UUID(),
             audioFileName: "test.m4a",
             recallPrompts: RecallPrompts(questions: [

@@ -6,9 +6,7 @@
 //
 
 import SwiftUI
-#if os(macOS)
 import AppKit
-#endif
 
 struct MarkdownNotesEditor: View {
     @Binding var text: String
@@ -37,24 +35,8 @@ struct MarkdownNotesEditor: View {
             Divider()
 
             // Notes text editor with live markdown rendering
-            #if os(macOS)
             LiveMarkdownEditor(text: $text)
                 .frame(height: editorHeight)
-            #else
-            ZStack(alignment: .topLeading) {
-                TextEditor(text: $text)
-                    .font(.system(.body, design: .default))
-                    .padding(12)
-                    .scrollContentBackground(.hidden)
-                    .background(Color.clear)
-                    .focused($isEditorFocused)
-
-                if text.isEmpty {
-                    placeholderText
-                }
-            }
-            .frame(height: editorHeight)
-            #endif
 
             // Resize handle
             resizeHandle
@@ -203,24 +185,12 @@ struct MarkdownNotesEditor: View {
     // MARK: - Formatting Actions
 
     private func insertMarkdown(prefix: String, suffix: String, isLinePrefix: Bool = false) {
-        #if os(macOS)
         // Post notification to the text editor
         NotificationCenter.default.post(
             name: .insertMarkdown,
             object: nil,
             userInfo: ["prefix": prefix, "suffix": suffix, "isLinePrefix": isLinePrefix]
         )
-        #else
-        if isLinePrefix {
-            if text.isEmpty || text.hasSuffix("\n") {
-                text += prefix
-            } else {
-                text += "\n" + prefix
-            }
-        } else {
-            text += "\(prefix)text\(suffix)"
-        }
-        #endif
     }
 }
 
@@ -272,9 +242,7 @@ struct FormatButton: View {
     }
 }
 
-// MARK: - macOS Live Markdown Editor
-
-#if os(macOS)
+// MARK: - Live Markdown Editor
 
 // Custom NSTextView that handles keyboard shortcuts
 class MarkdownTextView: NSTextView {
@@ -708,7 +676,6 @@ struct LiveMarkdownEditor: NSViewRepresentable {
         }
     }
 }
-#endif
 
 #Preview {
     MarkdownNotesEditor(text: .constant("# Heading 1\n\nSome **bold** and _italic_ text.\n\n## Heading 2\n\n- Bullet point\n- Another point\n\n1. Numbered\n2. List"), noteTitle: .constant("My Notes"))

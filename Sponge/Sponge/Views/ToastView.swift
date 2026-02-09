@@ -95,19 +95,11 @@ extension View {
 }
 
 // Color extension for toast background
-#if os(macOS)
 extension Color {
     static var toastBackground: Color {
         Color(NSColor.windowBackgroundColor)
     }
 }
-#else
-extension Color {
-    static var toastBackground: Color {
-        Color(UIColor.systemBackground)
-    }
-}
-#endif
 
 #Preview {
     VStack {

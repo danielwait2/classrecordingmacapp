@@ -79,17 +79,32 @@ struct RecordingModel: Identifiable, Codable {
         catchUpSummaries = try container.decodeIfPresent([CatchUpSummary].self, forKey: .catchUpSummaries) ?? []
     }
 
+    // Cached formatters to avoid expensive re-creation
+    private static let nameDateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "MMM d, yyyy"
+        return f
+    }()
+
+    private static let nameTimeFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "h:mma"
+        f.amSymbol = "am"
+        f.pmSymbol = "pm"
+        return f
+    }()
+
+    private static let displayDateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateStyle = .medium
+        f.timeStyle = .short
+        return f
+    }()
+
     /// Generates a default name from class name, date, and time
     static func generateDefaultName(className: String? = nil, date: Date) -> String {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "MMM d, yyyy"
-        let datePart = dateFormatter.string(from: date)
-
-        let timeFormatter = DateFormatter()
-        timeFormatter.dateFormat = "h:mma"
-        timeFormatter.amSymbol = "am"
-        timeFormatter.pmSymbol = "pm"
-        let timePart = timeFormatter.string(from: date)
+        let datePart = nameDateFormatter.string(from: date)
+        let timePart = nameTimeFormatter.string(from: date)
 
         if let className = className {
             return "\(className), \(datePart), \(timePart)"
@@ -99,10 +114,7 @@ struct RecordingModel: Identifiable, Codable {
     }
 
     var formattedDate: String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        return formatter.string(from: date)
+        return Self.displayDateFormatter.string(from: date)
     }
 
     var formattedDuration: String {

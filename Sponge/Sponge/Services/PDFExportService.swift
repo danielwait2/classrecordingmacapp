@@ -1,13 +1,16 @@
 import Foundation
 import CoreGraphics
 import CoreText
-#if os(macOS)
 import AppKit
-#else
-import UIKit
-#endif
 
 class PDFExportService {
+    private static let metaDateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateStyle = .long
+        f.timeStyle = .short
+        return f
+    }()
+
     static func generatePDF(
         className: String,
         date: Date,
@@ -59,12 +62,8 @@ class PDFExportService {
             .foregroundColor: cgColor(black: false)
         ]
 
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateStyle = .long
-        dateFormatter.timeStyle = .short
-
         let durationString = formatDuration(duration)
-        let metaText = "Date: \(dateFormatter.string(from: date))\nDuration: \(durationString)"
+        let metaText = "Date: \(metaDateFormatter.string(from: date))\nDuration: \(durationString)"
         let metaString = NSAttributedString(string: metaText, attributes: metaAttributes)
         drawText(metaString, in: context, at: CGPoint(x: margin, y: pageHeight - margin - 50), maxWidth: pageWidth - margin * 2)
 

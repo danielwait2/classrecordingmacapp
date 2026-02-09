@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Launch Master Checklist - Sponge</title>
+    <link rel="stylesheet" href="assets/docs.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="index.html">← Back to Hub</a>
+        <h1>Launch Master Checklist</h1>
+    </nav>
+    
+    <div class="container">
+        <div class="doc-header">
+            <h1>📋 Sponge Launch Master Checklist</h1>
+            <div class="meta">
+                <span class="badge success">85% Ready</span>
+                <span>Timeline: 3 days to submission, 1 week to launch</span>
+            </div>
+        </div>
+
+        <div class="alert alert-info">
+            <strong>Status Update:</strong> App is ready (85%), documentation complete (100%).
+            Only 3 blockers remain, all fixable in &lt; 1 day.
+        </div>
+
+        <!-- Critical Dates Timeline -->
+        <div class="timeline-card">
+            <h2>🗓️ Critical Dates</h2>
+            <div class="timeline">
+                <div class="timeline-item blocker">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <h4>Feb 7 (Today)</h4>
+                        <p>Fix blockers + privacy policy</p>
+                        <span class="badge danger">🔴 TODO</span>
+                    </div>
+                </div>
+                <div class="timeline-item in-progress">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <h4>Feb 8</h4>
+                        <p>Screenshots + App Store listing</p>
+                        <span class="badge warning">🟡 TODO</span>
+                    </div>
+                </div>
+                <div class="timeline-item ready">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <h4>Feb 9</h4>
+                        <p>Code signing + SUBMIT</p>
+                        <span class="badge warning">🟡 TODO</span>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <h4>Feb 10-11</h4>
+                        <p>App Review (24-48 hours)</p>
+                        <span class="badge">⏳ WAIT</span>
+                    </div>
+                </div>
+                <div class="timeline-item ready">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <h4>Feb 12</h4>
+                        <p>App Approved!</p>
+                        <span class="badge success">🟢 SUCCESS</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Phase 1: Fix Blockers -->
+        <div class="phase-section blocker-section">
+            <h2>🚨 Phase 1: Fix Critical Blockers (Day 1 - 2-3 hours)</h2>
+            
+            <div class="blocker-card">
+                <h3>❌ Bundle ID Update</h3>
+                <p><strong>Current:</strong> <code>com.example.ClassTranscriber</code> (invalid for App Store)</p>
+                <p><strong>Required:</strong> Production domain (e.g., <code>com.yourdomain.Sponge</code>)</p>
+                <div class="checklist">
+                    <label><input type="checkbox"> Decide production domain</label>
+                    <label><input type="checkbox"> Update Sponge.xcodeproj/project.pbxproj (2 locations)</label>
+                    <label><input type="checkbox"> Register bundle ID in Apple Developer portal</label>
+                    <label><input type="checkbox"> Create provisioning profile</label>
+                    <label><input type="checkbox"> Test build succeeds</label>
+                </div>
+                <p class="time-estimate">⏱️ Time: 5 minutes</p>
+            </div>
+
+            <div class="blocker-card">
+                <h3>❌ Privacy Policy & Support URLs</h3>
+                <p><strong>Current:</strong> Not published</p>
+                <p><strong>Required:</strong> Accessible public URLs (HTTPS)</p>
+                <div class="checklist">
+                    <label><input type="checkbox"> Create privacy policy (use template)</label>
+                    <label><input type="checkbox"> Host on GitHub Pages or simple HTML</label>
+                    <label><input type="checkbox"> Create support page with contact info</label>
+                    <label><input type="checkbox"> Verify URLs work in incognito browser</label>
+                </div>
+                <p class="time-estimate">⏱️ Time: 1 hour</p>
+            </div>
+
+            <div class="blocker-card success">
+                <h3>✅ Calendar Privacy Description</h3>
+                <p><strong>Status:</strong> Already added to Info.plist</p>
+                <p><code>NSCalendarsUsageDescription</code> is present and verified.</p>
+            </div>
+        </div>
+
+        <!-- Phase 2: App Store Listing -->
+        <div class="phase-section">
+            <h2>📸 Phase 2: Prepare App Store Listing (Day 2 - 2-4 hours)</h2>
+            
+            <h3>Screenshots (Time-intensive!)</h3>
+            <p>Prepare 5-8 screenshots at 1280x800 PNG resolution:</p>
+            <div class="checklist">
+                <label><input type="checkbox"> Screenshot 1: Recording in action (live transcription visible)</label>
+                <label><input type="checkbox"> Screenshot 2: Intent markers during recording</label>
+                <label><input type="checkbox"> Screenshot 3: "What Did I Miss?" feature output</label>
+                <label><input type="checkbox"> Screenshot 4: Generated class notes (organized structure)</label>
+                <label><input type="checkbox"> Screenshot 5: Recall prompts / flashcards</label>
+                <label><input type="checkbox"> Screenshot 6: Enhanced summary view</label>
+                <label><input type="checkbox"> Screenshot 7: Multi-class organization</label>
+                <label><input type="checkbox"> Screenshot 8: PDF export result</label>
+            </div>
+
+            <div class="info-box">
+                <h4>Screenshot Quality Checklist</h4>
+                <ul>
+                    <li>Resolution: 1280x800 PNG</li>
+                    <li>No personal information visible</li>
+                    <li>Text is readable (large fonts)</li>
+                    <li>Consistent visual style</li>
+                    <li>Professional appearance</li>
+                </ul>
+            </div>
+
+            <h3>App Store Connect Metadata</h3>
+            <div class="checklist">
+                <label><input type="checkbox"> App name: "Sponge"</label>
+                <label><input type="checkbox"> Subtitle: "AI-Powered Lecture Recorder"</label>
+                <label><input type="checkbox"> Description: Copy from app-store-listing.md (4,000 chars)</label>
+                <label><input type="checkbox"> Keywords: Copy from app-store-listing.md (100 chars)</label>
+                <label><input type="checkbox"> Support URL: From privacy policy setup</label>
+                <label><input type="checkbox"> Privacy Policy URL: From privacy policy setup</label>
+                <label><input type="checkbox"> Category: Education</label>
+                <label><input type="checkbox"> Age rating: 4+</label>
+                <label><input type="checkbox"> Upload screenshots in correct order</label>
+            </div>
+        </div>
+
+        <!-- Phase 3: Submit -->
+        <div class="phase-section">
+            <h2>🚀 Phase 3: Code Signing & Submit (Day 3 - 2-3 hours)</h2>
+            
+            <h3>Apple Developer Setup</h3>
+            <div class="checklist">
+                <label><input type="checkbox"> Create Apple Distribution certificate</label>
+                <label><input type="checkbox"> Create App Store provisioning profile</label>
+                <label><input type="checkbox"> Download and install certificates</label>
+            </div>
+
+            <h3>Xcode Configuration</h3>
+            <div class="checklist">
+                <label><input type="checkbox"> Update Build Settings (Team ID, Code Signing)</label>
+                <label><input type="checkbox"> Set deployment target: macOS 14.0+</label>
+                <label><input type="checkbox"> Clean build folder (Cmd+Shift+K)</label>
+            </div>
+
+            <h3>Archive & Validate</h3>
+            <div class="checklist">
+                <label><input type="checkbox"> Select Release configuration</label>
+                <label><input type="checkbox"> Archive app (Product → Archive)</label>
+                <label><input type="checkbox"> Validate archive in Organizer</label>
+                <label><input type="checkbox"> Review warnings (should be none or minor)</label>
+            </div>
+
+            <h3>Submit to App Store</h3>
+            <div class="checklist">
+                <label><input type="checkbox"> Distribute App → App Store Connect</label>
+                <label><input type="checkbox"> Upload build to App Store Connect</label>
+                <label><input type="checkbox"> Wait for processing (~30 min)</label>
+                <label><input type="checkbox"> Verify build appears in App Store Connect</label>
+                <label><input type="checkbox"> Select build in version</label>
+                <label><input type="checkbox"> Submit for Review</label>
+                <label><input type="checkbox"> Answer export compliance: NO encryption</label>
+                <label><input type="checkbox"> Save submission timestamp</label>
+            </div>
+        </div>
+
+        <!-- Quick Start TL;DR -->
+        <div class="quick-start">
+            <h2>⚡ Quick Start (TL;DR)</h2>
+            <ol>
+                <li><strong>Today (2-3 hours):</strong> Change bundle ID, create privacy policy, create support page</li>
+                <li><strong>Tomorrow (2-4 hours):</strong> Capture 5-8 screenshots, upload to App Store Connect</li>
+                <li><strong>Day 3 (2-3 hours):</strong> Set up code signing, archive & validate, upload, SUBMIT</li>
+                <li><strong>Days 4-5:</strong> Wait for approval (24-48 hours)</li>
+                <li><strong>Week 2+:</strong> Beta testing & marketing</li>
+            </ol>
+        </div>
+
+        <!-- Success Metrics -->
+        <div class="metrics-section">
+            <h2>🎯 Success Metrics</h2>
+            
+            <div class="metric-grid">
+                <div class="metric-card">
+                    <h3>Week 1</h3>
+                    <ul>
+                        <li>500-1,000 downloads</li>
+                        <li>4+ star rating</li>
+                        <li>Featured on ProductHunt</li>
+                        <li>1-2 press mentions</li>
+                    </ul>
+                </div>
+                <div class="metric-card">
+                    <h3>Month 1</h3>
+                    <ul>
+                        <li>2,000+ downloads</li>
+                        <li>300+ active users</li>
+                        <li>4.5+ star rating</li>
+                        <li>5+ press mentions</li>
+                    </ul>
+                </div>
+                <div class="metric-card">
+                    <h3>Month 2</h3>
+                    <ul>
+                        <li>5,000+ downloads</li>
+                        <li>1,000+ active users</li>
+                        <li>50-100 paid subscribers</li>
+                        <li>$100-300 MRR</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="cta-section">
+            <h2>You've got all the documentation you need. Time to launch! 🚀</h2>
+            <p>Next action: <strong>Fix bundle ID (today, 5 min)</strong></p>
+            <a href="index.html" class="btn-primary">Back to Launch Hub</a>
+        </div>
+    </div>
+
+    <footer>
+        <p>Last updated: February 7, 2026</p>
+    </footer>
+</body>
+</html>

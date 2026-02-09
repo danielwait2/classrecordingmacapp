@@ -7,29 +7,48 @@ class TranscriptionService: ObservableObject {
     @Published var isTranscribing: Bool = false
     @Published var error: String?
 
-    // iOS 26+ SpeechAnalyzer for Voice Memos-level quality (stored as Any to avoid @available on stored properties)
+    // macOS 26+ SpeechAnalyzer for Voice Memos-level quality (stored as Any to avoid @available on stored properties)
     private var modernAnalyzer: Any?
 
-    // Fallback to traditional Speech Recognition for older devices
+    // Fallback to traditional Speech Recognition for older systems
     private var speechRecognizer: SFSpeechRecognizer?
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
-    private var audioEngine: AVAudioEngine? // Only used on iOS
-    private var isStoppingIntentionally = false
+
+    // Thread-safe state protected by stateQueue
+    private let stateQueue = DispatchQueue(label: "com.sponge.transcription.state")
+    private var _isStoppingIntentionally = false
+    private var _baseTranscript: String = ""
+    private var _restartCount: Int = 0
+    private let maxRestarts = 50
+
+    private var isStoppingIntentionally: Bool {
+        get { stateQueue.sync { _isStoppingIntentionally } }
+        set { stateQueue.sync { _isStoppingIntentionally = newValue } }
+    }
+
+    private var baseTranscript: String {
+        get { stateQueue.sync { _baseTranscript } }
+        set { stateQueue.sync { _baseTranscript = newValue } }
+    }
+
+    private var restartCount: Int {
+        get { stateQueue.sync { _restartCount } }
+        set { stateQueue.sync { _restartCount = newValue } }
+    }
 
     private var restartTimer: Timer?
-    private var baseTranscript: String = "" // Accumulates text across restarts (legacy mode only)
 
     // Check if we can use the modern API
     private var useModernAPI: Bool {
-        if #available(iOS 26.0, macOS 26.0, *) {
+        if #available(macOS 26.0, *) {
             return modernAnalyzer != nil
         }
         return false
     }
 
     init() {
-        if #available(iOS 26.0, macOS 26.0, *) {
+        if #available(macOS 26.0, *) {
             // Use modern SpeechAnalyzer API (Voice Memos quality)
             let analyzer = SpeechAnalyzerService()
             modernAnalyzer = analyzer
@@ -39,13 +58,13 @@ class TranscriptionService: ObservableObject {
             speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
 
             // Configure for better accuracy
-            if #available(macOS 13, iOS 16, *) {
+            if #available(macOS 13, *) {
                 speechRecognizer?.supportsOnDeviceRecognition = true
             }
         }
     }
 
-    @available(iOS 26.0, macOS 26.0, *)
+    @available(macOS 26.0, *)
     private func setupAnalyzerBindings(_ analyzer: SpeechAnalyzerService) {
         // Forward published properties from SpeechAnalyzerService
         analyzer.$transcribedText.assign(to: &$transcribedText)
@@ -63,7 +82,7 @@ class TranscriptionService: ObservableObject {
 
     func startTranscribing() {
         // Use modern API if available
-        if #available(iOS 26.0, macOS 26.0, *), modernAnalyzer != nil {
+        if #available(macOS 26.0, *), modernAnalyzer != nil {
             startTranscribingModern()
             return
         }
@@ -72,9 +91,15 @@ class TranscriptionService: ObservableObject {
         startTranscribingLegacy()
     }
 
-    @available(iOS 26.0, macOS 26.0, *)
+    @available(macOS 26.0, *)
     private func startTranscribingModern() {
         guard let analyzer = modernAnalyzer as? SpeechAnalyzerService else { return }
+
+        // Wire SharedAudioManager buffers to SpeechAnalyzerService
+        SharedAudioManager.shared.transcriptionBufferHandler = { [weak analyzer] buffer in
+            analyzer?.appendBuffer(buffer)
+        }
+
         analyzer.startTranscribing()
     }
 
@@ -82,6 +107,7 @@ class TranscriptionService: ObservableObject {
         // Reset state
         isStoppingIntentionally = false
         baseTranscript = "" // Only reset on fresh start
+        restartCount = 0
         transcribedText = ""
         error = nil
 
@@ -114,7 +140,7 @@ class TranscriptionService: ObservableObject {
             recognitionRequest.shouldReportPartialResults = true
 
             // Voice Memos-level quality settings
-            if #available(macOS 13, iOS 16, *) {
+            if #available(macOS 13, *) {
                 recognitionRequest.addsPunctuation = true
                 recognitionRequest.requiresOnDeviceRecognition = false // Server-side for best quality
             }
@@ -123,11 +149,10 @@ class TranscriptionService: ObservableObject {
             recognitionRequest.taskHint = .dictation
 
             // Advanced recognition features
-            if #available(macOS 14, iOS 17, *) {
+            if #available(macOS 14, *) {
                 recognitionRequest.contextualStrings = [] // Better uncommon word recognition
             }
 
-            #if os(macOS)
             // On macOS, use SharedAudioManager to receive audio buffers
             // The AudioRecordingService starts the SharedAudioManager, we just hook into it
             print("TranscriptionService: Setting up buffer handler for SharedAudioManager")
@@ -135,29 +160,6 @@ class TranscriptionService: ObservableObject {
                 print("TranscriptionService: Received buffer with \(buffer.frameLength) frames")
                 self?.recognitionRequest?.append(buffer)
             }
-            #else
-            // On iOS, create our own audio engine (works alongside AVAudioRecorder)
-            audioEngine = AVAudioEngine()
-            guard let audioEngine = audioEngine else { return }
-
-            let audioSession = AVAudioSession.sharedInstance()
-            try audioSession.setCategory(.playAndRecord, mode: .voiceChat, options: [.defaultToSpeaker, .allowBluetooth])
-            try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
-
-            let inputNode = audioEngine.inputNode
-            let recordingFormat = inputNode.outputFormat(forBus: 0)
-
-            // Remove any existing tap
-            inputNode.removeTap(onBus: 0)
-
-            // Larger buffer size matching Voice Memos approach
-            inputNode.installTap(onBus: 0, bufferSize: 8192, format: recordingFormat) { [weak self] buffer, _ in
-                self?.recognitionRequest?.append(buffer)
-            }
-
-            audioEngine.prepare()
-            try audioEngine.start()
-            #endif
 
             print("TranscriptionService: Starting recognition task")
 
@@ -228,53 +230,46 @@ class TranscriptionService: ObservableObject {
     }
 
     func pauseTranscribing() {
-        if #available(iOS 26.0, macOS 26.0, *), modernAnalyzer != nil {
+        if #available(macOS 26.0, *), modernAnalyzer != nil {
             pauseTranscribingModern()
             return
         }
-        #if os(iOS)
-        audioEngine?.pause()
-        #endif
         // On macOS, SharedAudioManager handles pause via AudioRecordingService
     }
 
-    @available(iOS 26.0, macOS 26.0, *)
+    @available(macOS 26.0, *)
     private func pauseTranscribingModern() {
         guard let analyzer = modernAnalyzer as? SpeechAnalyzerService else { return }
         analyzer.pauseTranscribing()
     }
 
     func resumeTranscribing() {
-        if #available(iOS 26.0, macOS 26.0, *), modernAnalyzer != nil {
+        if #available(macOS 26.0, *), modernAnalyzer != nil {
             resumeTranscribingModern()
             return
         }
-        #if os(iOS)
-        try? audioEngine?.start()
-        #endif
         // On macOS, SharedAudioManager handles resume via AudioRecordingService
     }
 
-    @available(iOS 26.0, macOS 26.0, *)
+    @available(macOS 26.0, *)
     private func resumeTranscribingModern() {
         guard let analyzer = modernAnalyzer as? SpeechAnalyzerService else { return }
         analyzer.resumeTranscribing()
     }
 
     func stopTranscribing() {
-        if #available(iOS 26.0, macOS 26.0, *), modernAnalyzer != nil {
+        if #available(macOS 26.0, *), modernAnalyzer != nil {
             stopTranscribingModern()
             return
         }
 
         isStoppingIntentionally = true
+        restartCount = 0
         restartTimer?.invalidate()
         restartTimer = nil
 
-        #if os(macOS)
         // Clear the buffer handler
         SharedAudioManager.shared.transcriptionBufferHandler = nil
-        #endif
 
         // End audio first to let recognition finish processing
         recognitionRequest?.endAudio()
@@ -292,14 +287,27 @@ class TranscriptionService: ObservableObject {
         }
     }
 
-    @available(iOS 26.0, macOS 26.0, *)
+    @available(macOS 26.0, *)
     private func stopTranscribingModern() {
         guard let analyzer = modernAnalyzer as? SpeechAnalyzerService else { return }
+
+        // Clear buffer handler before stopping
+        SharedAudioManager.shared.transcriptionBufferHandler = nil
+
         analyzer.stopTranscribing()
     }
 
     private func restartTranscription() {
         guard !isStoppingIntentionally else { return }
+
+        restartCount += 1
+        if restartCount > maxRestarts {
+            print("TranscriptionService: Hit max restart limit (\(maxRestarts)). Stopping automatic restarts.")
+            DispatchQueue.main.async {
+                self.error = "Transcription restarted too many times. Recording continues but live transcription has stopped."
+            }
+            return
+        }
 
         // Save current accumulated text to base transcript BEFORE canceling
         // This ensures we don't lose any text during the restart
@@ -328,25 +336,23 @@ class TranscriptionService: ObservableObject {
 
                 recognitionRequest.shouldReportPartialResults = true
 
-                if #available(macOS 13, iOS 16, *) {
+                if #available(macOS 13, *) {
                     recognitionRequest.addsPunctuation = true
                     recognitionRequest.requiresOnDeviceRecognition = false
                 }
 
                 recognitionRequest.taskHint = .dictation
 
-                if #available(macOS 14, iOS 17, *) {
+                if #available(macOS 14, *) {
                     recognitionRequest.contextualStrings = []
                 }
 
-                #if os(macOS)
                 // Re-attach to SharedAudioManager
                 SharedAudioManager.shared.transcriptionBufferHandler = { [weak self] buffer in
                     self?.recognitionRequest?.append(buffer)
                 }
-                #endif
 
-                // Continue using existing audio engine tap (iOS) or SharedAudioManager (macOS)
+                // Continue using SharedAudioManager
                 guard let recognizer = self.speechRecognizer else { return }
 
                 // Capture baseTranscript at task creation time to avoid race conditions
@@ -409,18 +415,12 @@ class TranscriptionService: ObservableObject {
     }
 
     private func cleanupAudioEngine() {
-        #if os(iOS)
-        audioEngine?.stop()
-        audioEngine?.inputNode.removeTap(onBus: 0)
-        audioEngine = nil
-        #else
         // On macOS, just clear the handler - SharedAudioManager manages the engine
         SharedAudioManager.shared.transcriptionBufferHandler = nil
-        #endif
     }
 
     func reset() {
-        if #available(iOS 26.0, macOS 26.0, *), modernAnalyzer != nil {
+        if #available(macOS 26.0, *), modernAnalyzer != nil {
             resetModern()
             return
         }
@@ -434,9 +434,10 @@ class TranscriptionService: ObservableObject {
         }
     }
 
-    @available(iOS 26.0, macOS 26.0, *)
+    @available(macOS 26.0, *)
     private func resetModern() {
         guard let analyzer = modernAnalyzer as? SpeechAnalyzerService else { return }
+        SharedAudioManager.shared.transcriptionBufferHandler = nil
         analyzer.reset()
     }
 }

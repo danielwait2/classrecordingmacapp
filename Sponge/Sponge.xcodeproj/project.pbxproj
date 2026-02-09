@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C1000001207C0001 /* SpongeDataModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1000002207C0001 /* SpongeDataModels.swift */; };
+		C1000003207C0001 /* PersistenceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1000004207C0001 /* PersistenceService.swift */; };
 		8A5048D72F33E39500EE01EC /* SharedAudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A5048D62F33E39500EE01EC /* SharedAudioManager.swift */; };
 		A1000048207A0012 /* MarkdownNotesEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000049207A0012 /* MarkdownNotesEditor.swift */; };
 		B1000001207B0001 /* IntentMarker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002207B0001 /* IntentMarker.swift */; };
@@ -32,10 +34,6 @@
 		A100001B207A0002 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100001C207A0002 /* SettingsView.swift */; };
 		A100001D207A0003 /* ToastView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100001E207A0003 /* ToastView.swift */; };
 		A1000030207A0004 /* SaveDestination.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000031207A0004 /* SaveDestination.swift */; };
-		A1000032207A0004 /* GoogleAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000033207A0004 /* GoogleAuthService.swift */; };
-		A1000034207A0004 /* GoogleDriveService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000035207A0004 /* GoogleDriveService.swift */; };
-		A1000036207A0004 /* GoogleSignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000037207A0004 /* GoogleSignInView.swift */; };
-		A1000038207A0004 /* GoogleDriveFolderPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000039207A0004 /* GoogleDriveFolderPicker.swift */; };
 		A100003A207A0005 /* GeminiService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100003B207A0005 /* GeminiService.swift */; };
 		A100003C207A0005 /* KeychainHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100003D207A0005 /* KeychainHelper.swift */; };
 		A100003E207A0006 /* MarkdownParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100003F207A0006 /* MarkdownParser.swift */; };
@@ -48,6 +46,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		C1000002207C0001 /* SpongeDataModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpongeDataModels.swift; sourceTree = "<group>"; };
+		C1000004207C0001 /* PersistenceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceService.swift; sourceTree = "<group>"; };
 		8A5048D62F33E39500EE01EC /* SharedAudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedAudioManager.swift; sourceTree = "<group>"; };
 		A1000002207A0001 /* SpongeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpongeApp.swift; sourceTree = "<group>"; };
 		A1000004207A0001 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -68,10 +68,6 @@
 		A100001E207A0003 /* ToastView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastView.swift; sourceTree = "<group>"; };
 		A1000020207A0001 /* Sponge.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Sponge.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A1000031207A0004 /* SaveDestination.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveDestination.swift; sourceTree = "<group>"; };
-		A1000033207A0004 /* GoogleAuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleAuthService.swift; sourceTree = "<group>"; };
-		A1000035207A0004 /* GoogleDriveService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleDriveService.swift; sourceTree = "<group>"; };
-		A1000037207A0004 /* GoogleSignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleSignInView.swift; sourceTree = "<group>"; };
-		A1000039207A0004 /* GoogleDriveFolderPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleDriveFolderPicker.swift; sourceTree = "<group>"; };
 		A100003B207A0005 /* GeminiService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeminiService.swift; sourceTree = "<group>"; };
 		A100003D207A0005 /* KeychainHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainHelper.swift; sourceTree = "<group>"; };
 		A100003F207A0006 /* MarkdownParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownParser.swift; sourceTree = "<group>"; };
@@ -143,6 +139,7 @@
 				A1000041207A0007 /* NoteStyle.swift */,
 				B1000002207B0001 /* IntentMarker.swift */,
 				B1000004207B0001 /* EnhancedSummary.swift */,
+				C1000002207C0001 /* SpongeDataModels.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -154,11 +151,10 @@
 				A100000C207A0001 /* TranscriptionService.swift */,
 				A19A06C48F3241 /* SpeechAnalyzerService.swift */,
 				A100000E207A0001 /* PDFExportService.swift */,
-				A1000033207A0004 /* GoogleAuthService.swift */,
-				A1000035207A0004 /* GoogleDriveService.swift */,
 				A100003B207A0005 /* GeminiService.swift */,
 				A1000043207A0008 /* CalendarService.swift */,
 				8A5048D62F33E39500EE01EC /* SharedAudioManager.swift */,
+				C1000004207C0001 /* PersistenceService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -182,8 +178,6 @@
 				A100001A207A0001 /* ClassEditorView.swift */,
 				A100001C207A0002 /* SettingsView.swift */,
 				A100001E207A0003 /* ToastView.swift */,
-				A1000037207A0004 /* GoogleSignInView.swift */,
-				A1000039207A0004 /* GoogleDriveFolderPicker.swift */,
 				A1000046207A0009 /* Components */,
 				B1000010207B0001 /* PostLecture */,
 			);
@@ -299,8 +293,6 @@
 				A100000B207A0001 /* TranscriptionService.swift in Sources */,
 				A1CC76F5FA4216 /* SpeechAnalyzerService.swift in Sources */,
 				A100000D207A0001 /* PDFExportService.swift in Sources */,
-				A1000032207A0004 /* GoogleAuthService.swift in Sources */,
-				A1000034207A0004 /* GoogleDriveService.swift in Sources */,
 				A100000F207A0001 /* ClassViewModel.swift in Sources */,
 				A1000011207A0001 /* RecordingViewModel.swift in Sources */,
 				A1000013207A0001 /* RecordingView.swift in Sources */,
@@ -310,8 +302,6 @@
 				A1000019207A0001 /* ClassEditorView.swift in Sources */,
 				A100001B207A0002 /* SettingsView.swift in Sources */,
 				A100001D207A0003 /* ToastView.swift in Sources */,
-				A1000036207A0004 /* GoogleSignInView.swift in Sources */,
-				A1000038207A0004 /* GoogleDriveFolderPicker.swift in Sources */,
 				A100003A207A0005 /* GeminiService.swift in Sources */,
 				A100003C207A0005 /* KeychainHelper.swift in Sources */,
 				A100003E207A0006 /* MarkdownParser.swift in Sources */,
@@ -327,6 +317,8 @@
 				B1000009207B0001 /* EnhancedSummaryView.swift in Sources */,
 				B100000B207B0001 /* RecallPromptsView.swift in Sources */,
 				B100000D207B0001 /* RecordingDetailView.swift in Sources */,
+				C1000001207C0001 /* SpongeDataModels.swift in Sources */,
+				C1000003207C0001 /* PersistenceService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

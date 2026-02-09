@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Tab-based view showing available summaries from a recording
 struct EnhancedSummaryView: View {
-    let recording: RecordingModel
+    let recording: SDRecording
 
     @State private var selectedTab: SummaryTab = .overview
 
@@ -336,7 +336,7 @@ private struct SummaryEmptyStateView: View {
 
 #Preview {
     EnhancedSummaryView(
-        recording: RecordingModel(
+        recording: SDRecording(
             classId: UUID(),
             audioFileName: "test.m4a",
             intentMarkers: [

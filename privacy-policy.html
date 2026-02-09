@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sponge Privacy Policy</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+            background-color: #f9f9f9;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #2c3e50;
+            margin-top: 30px;
+        }
+        .last-updated {
+            color: #666;
+            font-style: italic;
+            margin-bottom: 30px;
+        }
+        .toc {
+            background-color: #ecf0f1;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .toc ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .toc a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        .toc a:hover {
+            text-decoration: underline;
+        }
+        p {
+            margin: 12px 0;
+        }
+        ul, ol {
+            margin: 12px 0;
+            padding-left: 20px;
+        }
+        .highlight {
+            background-color: #fff3cd;
+            padding: 15px;
+            border-left: 4px solid #ffc107;
+            margin: 20px 0;
+        }
+        .contact {
+            background-color: #e8f4f8;
+            padding: 20px;
+            border-radius: 5px;
+            margin-top: 30px;
+        }
+        code {
+            background-color: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>Privacy Policy for Sponge</h1>
+
+    <p class="last-updated">Last Updated: February 7, 2026</p>
+
+    <div class="highlight">
+        <strong>Quick Summary:</strong> Sponge is designed with privacy in mind. We don't collect personal data about you. Your lecture recordings and notes stay on your device. The only data we send externally is to Google's Gemini API when you request AI-powered features, and only what's necessary to generate your study materials.
+    </div>
+
+    <div class="toc">
+        <strong>Contents:</strong>
+        <ul>
+            <li><a href="#overview">1. Overview</a></li>
+            <li><a href="#data-we-dont-collect">2. Data We Don't Collect</a></li>
+            <li><a href="#data-we-store">3. Data We Store Locally</a></li>
+            <li><a href="#gemini-api">4. Google Gemini API</a></li>
+            <li><a href="#how-we-protect">5. How We Protect Your Data</a></li>
+            <li><a href="#permissions">6. App Permissions</a></li>
+            <li><a href="#data-retention">7. Data Retention & Deletion</a></li>
+            <li><a href="#your-rights">8. Your Privacy Rights</a></li>
+            <li><a href="#contact">9. Contact Us</a></li>
+        </ul>
+    </div>
+
+    <h2 id="overview">1. Overview</h2>
+    <p>Wait Works LLC ("we," "us," "our," or "Company") operates the Sponge application (the "App"). This Privacy Policy explains our privacy practices and how we handle information in the App.</p>
+
+    <p><strong>Our Commitment:</strong> We believe your privacy is fundamental. Sponge is built on the principle that your lecture recordings and study materials are your personal property. We don't collect analytics, don't track your behavior, and don't sell your data.</p>
+
+    <h2 id="data-we-dont-collect">2. Data We Don't Collect</h2>
+    <p>Sponge does <strong>not</strong> collect, store, or transmit any of the following:</p>
+    <ul>
+        <li>Analytics or telemetry data about your app usage</li>
+        <li>Crash reports or diagnostic information</li>
+        <li>Your location data</li>
+        <li>Information about which classes you record</li>
+        <li>Your name, email, or other personal identifiers</li>
+        <li>Behavioral data or interaction tracking</li>
+        <li>Marketing or advertising data</li>
+        <li>Device identifiers or advertising identifiers</li>
+    </ul>
+
+    <h2 id="data-we-store">3. Data We Store Locally</h2>
+    <p>All of your personal data in Sponge is stored <strong>exclusively on your device</strong> in your user account's data directory. This includes:</p>
+
+    <h3>Audio Recordings</h3>
+    <ul>
+        <li><strong>Format:</strong> M4A/AAC audio files</li>
+        <li><strong>Location:</strong> Your device's Documents/Sponge folder (sandboxed)</li>
+        <li><strong>Encryption:</strong> Protected by your device's file system encryption</li>
+        <li><strong>Access:</strong> Only accessible by you and the Sponge app</li>
+    </ul>
+
+    <h3>Transcripts</h3>
+    <ul>
+        <li><strong>Format:</strong> Text stored in SwiftData database</li>
+        <li><strong>Location:</strong> Local database on your device</li>
+        <li><strong>Content:</strong> Speech-to-text transcriptions of your lectures</li>
+        <li><strong>Never transmitted:</strong> Stays on your device unless you export</li>
+    </ul>
+
+    <h3>User Notes</h3>
+    <ul>
+        <li><strong>Format:</strong> Markdown text in SwiftData database</li>
+        <li><strong>Location:</strong> Local database on your device</li>
+        <li><strong>Content:</strong> Your personal notes and annotations</li>
+        <li><strong>Privacy:</strong> 100% local, never shared</li>
+    </ul>
+
+    <h3>Class Information</h3>
+    <ul>
+        <li><strong>Stored:</strong> Class names, course codes, professor names (if entered)</li>
+        <li><strong>Location:</strong> Local database on your device</li>
+        <li><strong>Never transmitted:</strong> Stays private unless you export</li>
+    </ul>
+
+    <h3>Intent Markers & Metadata</h3>
+    <ul>
+        <li><strong>Stored:</strong> Markers (?, !, ★, ▸) you add during lectures</li>
+        <li><strong>Location:</strong> Linked to transcript, stored locally</li>
+        <li><strong>Privacy:</strong> Local only, never synced anywhere</li>
+    </ul>
+
+    <h2 id="gemini-api">4. Google Gemini API - How AI Features Work</h2>
+
+    <h3>Overview</h3>
+    <p>When you use Sponge's AI-powered features (generating class notes, summaries, or practice questions), the app must send data to Google's Gemini API. We want to be completely transparent about this.</p>
+
+    <h3>What Gets Sent</h3>
+    <p>Only when you explicitly request an AI feature:</p>
+    <ul>
+        <li><strong>Your transcript:</strong> The speech-to-text output from your lecture</li>
+        <li><strong>Generation parameters:</strong> Your preferences (note style, length, etc.)</li>
+        <li><strong>Nothing else:</strong> We send only what's needed to generate the feature</li>
+    </ul>
+
+    <p><strong>What we DON'T send:</strong></p>
+    <ul>
+        <li>Your name or personal identifiers</li>
+        <li>Device information</li>
+        <li>Location data</li>
+        <li>Behavioral data</li>
+        <li>Class names or course information (unless you include it in the transcript)</li>
+    </ul>
+
+    <h3>Your API Key</h3>
+    <p>Sponge requires you to provide your own Google Gemini API key. This means:</p>
+    <ul>
+        <li><strong>You control:</strong> When API calls are made and with which account</li>
+        <li><strong>You pay:</strong> API costs are billed to your Google account (typically < $0.01 per generation)</li>
+        <li><strong>Your key is secure:</strong> Stored in macOS Keychain, encrypted by your device</li>
+        <li><strong>We never see:</strong> Your actual API key—it's managed securely by the operating system</li>
+    </ul>
+
+    <h3>Google's Data Handling</h3>
+    <p>When you use AI features, your transcript is sent to Google's servers. Google's privacy practices apply to that data. Please review <a href="https://policies.google.com/privacy">Google's Privacy Policy</a>.</p>
+
+    <p><strong>Important:</strong> Google may process your transcript to provide the API service. We recommend reviewing Google's terms if you have concerns about how they handle API request data.</p>
+
+    <h3>AI Responses Are Yours</h3>
+    <p>All AI-generated content (notes, summaries, questions) belongs to you:</p>
+    <ul>
+        <li>You own the copyright to generated content</li>
+        <li>We don't use your content for AI training</li>
+        <li>You can use generated content for any purpose</li>
+    </ul>
+
+    <h2 id="how-we-protect">5. How We Protect Your Data</h2>
+
+    <h3>App Sandboxing</h3>
+    <p>Sponge runs in macOS sandbox mode, which means:</p>
+    <ul>
+        <li>The app can only access files you explicitly grant permission for</li>
+        <li>No access to your other apps or personal files</li>
+        <li>Prevents unauthorized file system access</li>
+    </ul>
+
+    <h3>Encryption</h3>
+    <ul>
+        <li><strong>Data at rest:</strong> Protected by your Mac's file system encryption (FileVault)</li>
+        <li><strong>Data in transit:</strong> All network calls use HTTPS with TLS 1.3+</li>
+        <li><strong>API key:</strong> Stored in macOS Keychain (OS-level encryption)</li>
+    </ul>
+
+    <h3>No Cloud Sync</h3>
+    <ul>
+        <li>Your data stays on your device by default</li>
+        <li>No automatic backup to cloud services</li>
+        <li>No iCloud sync (you control when/if you export)</li>
+    </ul>
+
+    <h3>No Third-Party Access</h3>
+    <ul>
+        <li>We don't share data with advertisers, brokers, or analytics companies</li>
+        <li>Your data is not sold or rented</li>
+        <li>Only Google (via Gemini API) receives data when you request AI features</li>
+    </ul>
+
+    <h2 id="permissions">6. App Permissions</h2>
+    <p>Sponge requests three permissions from macOS. Here's why:</p>
+
+    <h3>Microphone Access</h3>
+    <ul>
+        <li><strong>Why:</strong> To record your lectures</li>
+        <li><strong>Usage:</strong> Only when you click "Record"</li>
+        <li><strong>Control:</strong> You can deny this in macOS Settings; Sponge will ask again</li>
+    </ul>
+
+    <h3>Speech Recognition</h3>
+    <ul>
+        <li><strong>Why:</strong> To transcribe your lectures in real-time</li>
+        <li><strong>Usage:</strong> Only during recording sessions</li>
+        <li><strong>Note:</strong> Transcription happens on-device; no data sent to Apple</li>
+    </ul>
+
+    <h3>Calendar Access (Optional)</h3>
+    <ul>
+        <li><strong>Why:</strong> To help organize recordings by class schedule</li>
+        <li><strong>Usage:</strong> Only if you enable this feature in Settings</li>
+        <li><strong>Control:</strong> You can disable this at any time</li>
+    </ul>
+
+    <h2 id="data-retention">7. Data Retention & Deletion</h2>
+
+    <h3>How Long We Keep Data</h3>
+    <p>Your data stays on your device indefinitely until you delete it. We have no automatic deletion or data expiration.</p>
+
+    <h3>How to Delete Your Data</h3>
+    <p><strong>Delete Individual Recordings:</strong></p>
+    <ol>
+        <li>Open Sponge</li>
+        <li>Select a recording</li>
+        <li>Click "Delete"</li>
+        <li>Confirm deletion</li>
+        <li>Recording, transcript, and associated data are permanently deleted</li>
+    </ol>
+
+    <p><strong>Delete All Data:</strong></p>
+    <ol>
+        <li>Uninstall Sponge from Applications folder</li>
+        <li>Delete Sponge folder from ~/Documents/</li>
+        <li>Delete Sponge app data: ~/Library/Application Support/Sponge/</li>
+        <li>All your data is permanently removed</li>
+    </ol>
+
+    <p><strong>Important:</strong> Deleted data cannot be recovered. We don't maintain backups of your personal content.</p>
+
+    <h2 id="your-rights">8. Your Privacy Rights</h2>
+
+    <h3>CCPA (California Consumer Privacy Act)</h3>
+    <p>If you're a California resident, you have the right to:</p>
+    <ul>
+        <li><strong>Know:</strong> What personal information is collected (minimal in Sponge)</li>
+        <li><strong>Delete:</strong> Your data (see section 7 above)</li>
+        <li><strong>Opt-out:</strong> Not applicable—we don't collect behavioral data</li>
+    </ul>
+
+    <h3>GDPR (General Data Protection Regulation)</h3>
+    <p>If you're in Europe, you have the right to:</p>
+    <ul>
+        <li><strong>Access:</strong> Your data (it's on your device)</li>
+        <li><strong>Delete:</strong> Your data (section 7 above)</li>
+        <li><strong>Portability:</strong> Export your data as PDF</li>
+        <li><strong>Object:</strong> To processing—you can delete data at any time</li>
+    </ul>
+
+    <h3>How to Exercise Your Rights</h3>
+    <p>Contact us at the address below with:</p>
+    <ul>
+        <li>Your request (access, deletion, export, etc.)</li>
+        <li>Proof of identity if requesting someone else's data</li>
+        <li>Details about what data you're referring to</li>
+    </ul>
+    <p>We'll respond within 30 days.</p>
+
+    <h2 id="contact">9. Contact Us</h2>
+    <p>Questions about this Privacy Policy or how Sponge handles your data?</p>
+
+    <div class="contact">
+        <p><strong>Wait Works LLC</strong></p>
+        <p>Email: <a href="mailto:privacy@waitworks.com">privacy@waitworks.com</a></p>
+        <p>Website: <a href="https://waitworks.com">waitworks.com</a></p>
+    </div>
+
+    <p>We take your privacy seriously and welcome any questions or concerns. We'll respond to privacy inquiries within 48 hours.</p>
+
+    <h2>Changes to This Privacy Policy</h2>
+    <p>We may update this policy periodically. If we make material changes, we'll notify you through the App or email. Your continued use of Sponge after changes means you accept the updated policy.</p>
+
+    <h2>Summary</h2>
+    <p><strong>In one sentence:</strong> Sponge keeps your lecture recordings and notes private on your device; we only see data you send to Google's AI API when you request features.</p>
+
+    <hr style="margin-top: 50px; border: none; border-top: 1px solid #ccc;">
+    <p style="text-align: center; color: #666; font-size: 12px; margin-top: 30px;">
+        Privacy Policy for Sponge | Last Updated: February 7, 2026<br>
+        © 2026 Wait Works LLC. All rights reserved.
+    </p>
+</body>
+</html>

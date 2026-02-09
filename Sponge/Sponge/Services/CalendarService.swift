@@ -2,8 +2,6 @@
 //  CalendarService.swift
 //  Sponge
 //
-//  Created by Claude on 2026-02-03.
-//
 
 import Foundation
 import EventKit
@@ -16,45 +14,12 @@ class CalendarService: ObservableObject {
     @Published var authorizationStatus: EKAuthorizationStatus = .notDetermined
 
     private init() {
-        #if os(iOS)
-        if #available(iOS 17.0, *) {
-            authorizationStatus = EKEventStore.authorizationStatus(for: .event)
-        } else {
-            authorizationStatus = EKEventStore.authorizationStatus(for: .event)
-        }
-        #else
         authorizationStatus = EKEventStore.authorizationStatus(for: .event)
-        #endif
     }
 
     // MARK: - Authorization
 
     func requestCalendarAccess() async -> Bool {
-        #if os(iOS)
-        if #available(iOS 17.0, *) {
-            do {
-                let granted = try await eventStore.requestFullAccessToEvents()
-                await MainActor.run {
-                    authorizationStatus = granted ? .fullAccess : .denied
-                }
-                return granted
-            } catch {
-                await MainActor.run {
-                    authorizationStatus = .denied
-                }
-                return false
-            }
-        } else {
-            return await withCheckedContinuation { continuation in
-                eventStore.requestAccess(to: .event) { granted, _ in
-                    Task { @MainActor in
-                        self.authorizationStatus = granted ? .authorized : .denied
-                    }
-                    continuation.resume(returning: granted)
-                }
-            }
-        }
-        #else
         return await withCheckedContinuation { continuation in
             eventStore.requestAccess(to: .event) { granted, _ in
                 Task { @MainActor in
@@ -63,13 +28,12 @@ class CalendarService: ObservableObject {
                 continuation.resume(returning: granted)
             }
         }
-        #endif
     }
 
     // MARK: - Class Detection
 
     /// Detect which class is currently happening based on calendar events
-    func detectCurrentClass(from classes: [ClassModel]) -> ClassModel? {
+    func detectCurrentClass(from classes: [SDClass]) -> SDClass? {
         guard isAuthorized else { return nil }
 
         let now = Date()
@@ -82,7 +46,7 @@ class CalendarService: ObservableObject {
     }
 
     /// Find upcoming class within the next hour
-    func detectUpcomingClass(from classes: [ClassModel], within minutes: Int = 60) -> (classModel: ClassModel, startsIn: TimeInterval)? {
+    func detectUpcomingClass(from classes: [SDClass], within minutes: Int = 60) -> (classModel: SDClass, startsIn: TimeInterval)? {
         guard isAuthorized else { return nil }
 
         let now = Date()
@@ -104,15 +68,7 @@ class CalendarService: ObservableObject {
     // MARK: - Private Helpers
 
     private var isAuthorized: Bool {
-        #if os(iOS)
-        if #available(iOS 17.0, *) {
-            return authorizationStatus == .fullAccess
-        } else {
-            return authorizationStatus == .authorized
-        }
-        #else
         return authorizationStatus == .authorized
-        #endif
     }
 
     private func findEventAtTime(_ date: Date) -> EKEvent? {
@@ -143,7 +99,7 @@ class CalendarService: ObservableObject {
         return eventStore.events(matching: predicate)
     }
 
-    private func matchEventToClass(_ event: EKEvent, classes: [ClassModel]) -> ClassModel? {
+    private func matchEventToClass(_ event: EKEvent, classes: [SDClass]) -> SDClass? {
         let eventTitle = event.title.lowercased()
 
         // Try to find exact or partial match

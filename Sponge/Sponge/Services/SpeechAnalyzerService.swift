@@ -2,14 +2,14 @@
 //  SpeechAnalyzerService.swift
 //  Sponge
 //
-//  Voice Memos-level transcription using iOS 26+ SpeechAnalyzer API
+//  Voice Memos-level transcription using macOS 26+ SpeechAnalyzer API
 //
 
 import Foundation
 import Speech
 import AVFoundation
 
-@available(iOS 26.0, macOS 26.0, *)
+@available(macOS 26.0, *)
 class SpeechAnalyzerService: ObservableObject {
     @Published var transcribedText: String = ""
     @Published var isTranscribing: Bool = false
@@ -19,16 +19,24 @@ class SpeechAnalyzerService: ObservableObject {
     private var transcriber: SpeechTranscriber?
     private var inputContinuation: AsyncStream<AnalyzerInput>.Continuation?
     private var resultsTask: Task<Void, Never>?
-    private var audioEngine: AVAudioEngine?
     private var isStoppingIntentionally = false
+
+    // Audio format conversion
+    private var audioConverter: AVAudioConverter?
+    private var analyzerFormat: AVAudioFormat?
 
     // Accumulates text across transcriber restarts to prevent words from disappearing
     private var baseTranscript: String = ""
     private var lastResultLength: Int = 0
 
     init() {
-        // Initialize with current locale
-        // SpeechAnalyzer will be created when transcription starts
+        // SpeechAnalyzer requires 16-bit signed integer PCM format at 16 kHz
+        analyzerFormat = AVAudioFormat(
+            commonFormat: .pcmFormatInt16,
+            sampleRate: 16000,
+            channels: 1,
+            interleaved: false
+        )
     }
 
     func requestPermission(completion: @escaping (Bool) -> Void) {
@@ -39,12 +47,61 @@ class SpeechAnalyzerService: ObservableObject {
         }
     }
 
+    /// Called by TranscriptionService to feed audio buffers from SharedAudioManager
+    func appendBuffer(_ buffer: AVAudioPCMBuffer) {
+        guard let analyzerFormat = analyzerFormat else { return }
+
+        // Create converter lazily based on the incoming buffer format
+        if audioConverter == nil {
+            let inputFormat = buffer.format
+            audioConverter = AVAudioConverter(from: inputFormat, to: analyzerFormat)
+            if audioConverter == nil {
+                print("SpeechAnalyzer: Failed to create audio converter from \(inputFormat) to \(analyzerFormat)")
+                return
+            }
+        }
+
+        guard let converter = audioConverter else { return }
+
+        // Convert to analyzer format (16-bit PCM, 16 kHz, mono)
+        let inputFormat = buffer.format
+        let frameCapacity = AVAudioFrameCount(Double(buffer.frameLength) * analyzerFormat.sampleRate / inputFormat.sampleRate)
+        guard frameCapacity > 0,
+              let convertedBuffer = AVAudioPCMBuffer(pcmFormat: analyzerFormat, frameCapacity: frameCapacity) else {
+            return
+        }
+
+        var error: NSError?
+        var hasData = true
+        let inputBlock: AVAudioConverterInputBlock = { _, outStatus in
+            if hasData {
+                hasData = false
+                outStatus.pointee = .haveData
+                return buffer
+            } else {
+                outStatus.pointee = .noDataNow
+                return nil
+            }
+        }
+
+        converter.convert(to: convertedBuffer, error: &error, withInputFrom: inputBlock)
+
+        if let error = error {
+            print("SpeechAnalyzer: Conversion error: \(error)")
+            return
+        }
+
+        // Send converted buffer to analyzer
+        inputContinuation?.yield(AnalyzerInput(buffer: convertedBuffer))
+    }
+
     func startTranscribing() {
         isStoppingIntentionally = false
         transcribedText = ""
         baseTranscript = ""
         lastResultLength = 0
         error = nil
+        audioConverter = nil // Reset converter for fresh format detection
 
         Task {
             do {
@@ -119,10 +176,8 @@ class SpeechAnalyzerService: ObservableObject {
                 try await newAnalyzer.prepareToAnalyze(in: nil)
                 print("SpeechAnalyzer: Analyzer prepared")
 
-                // Start audio capture
-                print("SpeechAnalyzer: Starting audio capture...")
-                try await startAudioCapture()
-                print("SpeechAnalyzer: Audio capture started")
+                // Audio buffers will be fed via appendBuffer() from TranscriptionService/SharedAudioManager
+                print("SpeechAnalyzer: Ready to receive audio buffers from SharedAudioManager")
 
                 await MainActor.run {
                     self.isTranscribing = true
@@ -137,86 +192,16 @@ class SpeechAnalyzerService: ObservableObject {
         }
     }
 
-    private func startAudioCapture() async throws {
-        audioEngine = AVAudioEngine()
-        guard let audioEngine = audioEngine else { return }
-
-        #if os(iOS)
-        let audioSession = AVAudioSession.sharedInstance()
-        try audioSession.setCategory(.playAndRecord, mode: .voiceChat, options: [.defaultToSpeaker, .allowBluetooth])
-        try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
-        #endif
-
-        let inputNode = audioEngine.inputNode
-        let recordingFormat = inputNode.outputFormat(forBus: 0)
-
-        // SpeechAnalyzer requires 16-bit signed integer PCM format at 16 kHz
-        guard let analyzerFormat = AVAudioFormat(
-            commonFormat: .pcmFormatInt16,
-            sampleRate: 16000,
-            channels: 1,
-            interleaved: false
-        ) else {
-            throw NSError(domain: "SpeechAnalyzerService", code: -1,
-                         userInfo: [NSLocalizedDescriptionKey: "Failed to create analyzer audio format"])
-        }
-
-        // Create audio converter to convert from recording format to analyzer format
-        guard let converter = AVAudioConverter(from: recordingFormat, to: analyzerFormat) else {
-            throw NSError(domain: "SpeechAnalyzerService", code: -1,
-                         userInfo: [NSLocalizedDescriptionKey: "Failed to create audio converter"])
-        }
-
-        // Remove any existing tap
-        inputNode.removeTap(onBus: 0)
-
-        // Install tap with optimal buffer size
-        inputNode.installTap(onBus: 0, bufferSize: 8192, format: recordingFormat) { [weak self] buffer, _ in
-            guard let self = self else { return }
-
-            // Convert to analyzer format (16-bit PCM, 16 kHz, mono)
-            let frameCapacity = AVAudioFrameCount(Double(buffer.frameLength) * analyzerFormat.sampleRate / recordingFormat.sampleRate)
-            guard let convertedBuffer = AVAudioPCMBuffer(pcmFormat: analyzerFormat, frameCapacity: frameCapacity) else {
-                print("SpeechAnalyzer: Failed to create converted buffer")
-                return
-            }
-
-            var error: NSError?
-            let inputBlock: AVAudioConverterInputBlock = { inNumPackets, outStatus in
-                outStatus.pointee = .haveData
-                return buffer
-            }
-
-            converter.convert(to: convertedBuffer, error: &error, withInputFrom: inputBlock)
-
-            if let error = error {
-                print("SpeechAnalyzer: Conversion error: \(error)")
-                return
-            }
-
-            // Send converted buffer to analyzer
-            self.inputContinuation?.yield(AnalyzerInput(buffer: convertedBuffer))
-        }
-
-        audioEngine.prepare()
-        try audioEngine.start()
-    }
-
     func pauseTranscribing() {
-        audioEngine?.pause()
+        // SharedAudioManager handles audio engine pause
     }
 
     func resumeTranscribing() {
-        try? audioEngine?.start()
+        // SharedAudioManager handles audio engine resume
     }
 
     func stopTranscribing() {
         isStoppingIntentionally = true
-
-        // Stop audio engine
-        audioEngine?.stop()
-        audioEngine?.inputNode.removeTap(onBus: 0)
-        audioEngine = nil
 
         // Finish input stream
         inputContinuation?.finish()
@@ -225,6 +210,9 @@ class SpeechAnalyzerService: ObservableObject {
         // Cancel results task
         resultsTask?.cancel()
         resultsTask = nil
+
+        // Clean up converter
+        audioConverter = nil
 
         // Clean up analyzer and transcriber
         Task { @MainActor in

@@ -38,9 +38,6 @@ struct ContentView: View {
             }
             .background(SpongeTheme.backgroundCoral.opacity(0.05))
             .navigationTitle("Sponge")
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Menu {
@@ -89,27 +86,15 @@ struct ContentView: View {
 
 extension Color {
     static var primaryBackground: Color {
-        #if os(macOS)
         Color(NSColor.windowBackgroundColor)
-        #else
-        Color(UIColor.systemBackground)
-        #endif
     }
 
     static var secondaryBackground: Color {
-        #if os(macOS)
         Color(NSColor.controlBackgroundColor)
-        #else
-        Color(UIColor.secondarySystemBackground)
-        #endif
     }
 
     static var tertiaryBackground: Color {
-        #if os(macOS)
         Color(NSColor.textBackgroundColor)
-        #else
-        Color(UIColor.tertiarySystemBackground)
-        #endif
     }
 }
 

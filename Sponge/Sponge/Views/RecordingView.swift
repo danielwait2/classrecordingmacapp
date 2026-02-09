@@ -373,7 +373,7 @@ struct RecordingView: View {
         }
     }
 
-    private func classSelector(for selectedClass: ClassModel) -> some View {
+    private func classSelector(for selectedClass: SDClass) -> some View {
         Menu {
             ForEach(classViewModel.classes) { classModel in
                 Button {
@@ -501,21 +501,7 @@ struct ExpandingMarkdownNotesEditor: View {
             Divider()
 
             // Notes text editor - fills remaining space
-            #if os(macOS)
             LiveMarkdownEditor(text: $text)
-            #else
-            ZStack(alignment: .topLeading) {
-                TextEditor(text: $text)
-                    .font(.system(.body, design: .default))
-                    .padding(12)
-                    .scrollContentBackground(.hidden)
-                    .background(Color.clear)
-
-                if text.isEmpty {
-                    placeholderText
-                }
-            }
-            #endif
         }
         .background(Color.secondaryBackground)
         .cornerRadius(10)
@@ -602,15 +588,6 @@ struct ExpandingMarkdownNotesEditor: View {
         }
     }
 
-    private var placeholderText: some View {
-        Text("Start typing your notes...")
-            .font(.body)
-            .foregroundColor(.secondary.opacity(0.5))
-            .padding(.horizontal, 16)
-            .padding(.vertical, 20)
-            .allowsHitTesting(false)
-    }
-
     // MARK: - Computed Properties
 
     private var wordCount: Int {
@@ -620,23 +597,11 @@ struct ExpandingMarkdownNotesEditor: View {
     // MARK: - Formatting Actions
 
     private func insertMarkdown(prefix: String, suffix: String, isLinePrefix: Bool = false) {
-        #if os(macOS)
         NotificationCenter.default.post(
             name: .insertMarkdown,
             object: nil,
             userInfo: ["prefix": prefix, "suffix": suffix, "isLinePrefix": isLinePrefix]
         )
-        #else
-        if isLinePrefix {
-            if text.isEmpty || text.hasSuffix("\n") {
-                text += prefix
-            } else {
-                text += "\n" + prefix
-            }
-        } else {
-            text += "\(prefix)text\(suffix)"
-        }
-        #endif
     }
 }
 
@@ -670,19 +635,11 @@ struct PulsingModifier: ViewModifier {
 
 // MARK: - Color Extension
 
-#if os(macOS)
 extension Color {
     static var secondarySystemBackground: Color {
         Color(NSColor.controlBackgroundColor)
     }
 }
-#else
-extension Color {
-    static var secondarySystemBackground: Color {
-        Color(UIColor.secondarySystemBackground)
-    }
-}
-#endif
 
 #Preview {
     RecordingView(recordingViewModel: RecordingViewModel())

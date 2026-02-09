@@ -10,17 +10,33 @@
 import Foundation
 import AVFoundation
 
-#if os(macOS)
 /// Singleton that manages shared audio engine access on macOS
 /// This prevents conflicts when both recording and transcription need the microphone
 class SharedAudioManager {
     static let shared = SharedAudioManager()
 
     private(set) var audioEngine: AVAudioEngine?
-    private var audioFile: AVAudioFile?
-    private var isRecording = false
+
+    // Thread-safe state protected by audioStateQueue (accessed from audio thread via installTap)
+    private let audioStateQueue = DispatchQueue(label: "com.sponge.sharedaudio.state")
+    private var _audioFile: AVAudioFile?
+    private var _isRecording = false
+    private var _outputFormat: AVAudioFormat?
+
+    private var audioFile: AVAudioFile? {
+        get { audioStateQueue.sync { _audioFile } }
+        set { audioStateQueue.sync { _audioFile = newValue } }
+    }
+    private var isRecording: Bool {
+        get { audioStateQueue.sync { _isRecording } }
+        set { audioStateQueue.sync { _isRecording = newValue } }
+    }
+    private var outputFormat: AVAudioFormat? {
+        get { audioStateQueue.sync { _outputFormat } }
+        set { audioStateQueue.sync { _outputFormat = newValue } }
+    }
+
     private var recordingURL: URL?
-    private var outputFormat: AVAudioFormat?
     private var audioConverter: AVAudioConverter?
 
     // Callbacks for transcription service to receive audio buffers
@@ -94,8 +110,13 @@ class SharedAudioManager {
         inputNode.installTap(onBus: 0, bufferSize: 8192, format: inputFormat) { [weak self] buffer, _ in
             guard let self = self else { return }
 
+            // Snapshot thread-safe state once per callback
+            let (recording, file, outFormat): (Bool, AVAudioFile?, AVAudioFormat?) = self.audioStateQueue.sync {
+                (self._isRecording, self._audioFile, self._outputFormat)
+            }
+
             // Write to file if recording
-            if self.isRecording, let audioFile = self.audioFile, let outFormat = self.outputFormat {
+            if recording, let audioFile = file, let outFormat = outFormat {
                 do {
                     // Convert buffer if necessary
                     if let converter = self.audioConverter {
@@ -174,4 +195,3 @@ class SharedAudioManager {
         return audioEngine?.inputNode.outputFormat(forBus: 0)
     }
 }
-#endif
