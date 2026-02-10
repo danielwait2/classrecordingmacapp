@@ -44,20 +44,6 @@ struct RecordingView: View {
             // Live transcript with integrated controls
             transcriptWithControls
 
-            // "What did I miss?" catch-up button
-            HStack {
-                Spacer()
-                WhatDidIMissButton(
-                    isLoading: $recordingViewModel.isCatchUpLoading,
-                    lastSummary: recordingViewModel.lastCatchUpSummary,
-                    onTap: {
-                        Task {
-                            await recordingViewModel.requestCatchUpSummary()
-                        }
-                    }
-                )
-            }
-
             // User notes - fills remaining space
             userNotesInput
         }
@@ -81,15 +67,37 @@ struct RecordingView: View {
 
             Spacer()
 
-            // Class name
+            // Class name (clickable to change)
             if let selectedClass = classViewModel.selectedClass {
-                Text(selectedClass.name)
-                    .font(.subheadline.weight(.medium))
-                    .foregroundColor(.secondary)
+                Menu {
+                    ForEach(classViewModel.classes) { classModel in
+                        Button {
+                            classViewModel.selectedClass = classModel
+                        } label: {
+                            HStack {
+                                Text(classModel.name)
+                                if classModel.id == selectedClass.id {
+                                    Image(systemName: "checkmark")
+                                }
+                            }
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Text(selectedClass.name)
+                            .font(.subheadline.weight(.medium))
+                            .foregroundColor(.secondary)
+                        Image(systemName: "chevron.down.circle.fill")
+                            .font(.caption)
+                            .foregroundColor(.secondary.opacity(0.6))
+                    }
                     .padding(.horizontal, 10)
                     .padding(.vertical, 4)
                     .background(Color.secondary.opacity(0.1))
                     .cornerRadius(6)
+                }
+                .menuStyle(.borderlessButton)
+                .help("Change class")
             }
         }
         .padding(.horizontal, 4)
@@ -115,6 +123,15 @@ struct RecordingView: View {
 
                 Spacer()
 
+                // Recording time
+                Text(recordingViewModel.formattedDuration)
+                    .font(.system(.caption2, design: .monospaced))
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Color.secondary.opacity(0.1))
+                    .cornerRadius(4)
+
                 // Word count
                 Text("\(wordCount) words")
                     .font(.caption2)
@@ -123,6 +140,43 @@ struct RecordingView: View {
                     .padding(.vertical, 2)
                     .background(Color.secondary.opacity(0.1))
                     .cornerRadius(4)
+
+                // "What did I miss" button
+                Button {
+                    Task {
+                        await recordingViewModel.requestCatchUpSummary()
+                    }
+                } label: {
+                    HStack(spacing: 3) {
+                        if recordingViewModel.isCatchUpLoading {
+                            ProgressView()
+                                .scaleEffect(0.5)
+                        } else {
+                            Image(systemName: recordingViewModel.lastCatchUpSummary != nil ? "checkmark.circle.fill" : "brain.head.profile")
+                                .font(.caption2)
+                        }
+                        Text(recordingViewModel.lastCatchUpSummary != nil ? "Summary" : "Catch Up")
+                            .font(.caption2.weight(.medium))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(SpongeTheme.coral)
+                    .cornerRadius(4)
+                }
+                .buttonStyle(.plain)
+                .disabled(recordingViewModel.isCatchUpLoading)
+                .popover(isPresented: Binding(
+                    get: { recordingViewModel.lastCatchUpSummary != nil && !recordingViewModel.isCatchUpLoading },
+                    set: { if !$0 { recordingViewModel.lastCatchUpSummary = nil } }
+                )) {
+                    if let summary = recordingViewModel.lastCatchUpSummary {
+                        CompactCatchUpPopover(
+                            summary: summary,
+                            onDismiss: { recordingViewModel.lastCatchUpSummary = nil }
+                        )
+                    }
+                }
 
                 // Expand/collapse button
                 if lineCount > 3 {
@@ -602,6 +656,49 @@ struct ExpandingMarkdownNotesEditor: View {
             object: nil,
             userInfo: ["prefix": prefix, "suffix": suffix, "isLinePrefix": isLinePrefix]
         )
+    }
+}
+
+// MARK: - Compact Catch-Up Popover
+
+struct CompactCatchUpPopover: View {
+    let summary: CatchUpSummary
+    let onDismiss: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: SpongeTheme.spacingS) {
+            // Header
+            HStack {
+                Image(systemName: "brain.head.profile")
+                    .foregroundColor(SpongeTheme.coral)
+                    .font(.caption)
+                Text("Catch-Up")
+                    .font(.caption.weight(.semibold))
+                Spacer()
+                Button(action: onDismiss) {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundColor(.secondary.opacity(0.6))
+                        .font(.caption)
+                }
+                .buttonStyle(.plain)
+            }
+
+            // Time range
+            Text(summary.formattedRange)
+                .font(.caption2)
+                .foregroundColor(.secondary)
+
+            Divider()
+
+            // Summary content (limited to 3 lines)
+            Text(summary.summary)
+                .font(.caption)
+                .foregroundColor(.primary)
+                .lineSpacing(3)
+                .lineLimit(5)
+        }
+        .padding(SpongeTheme.spacingS)
+        .frame(width: 240)
     }
 }
 

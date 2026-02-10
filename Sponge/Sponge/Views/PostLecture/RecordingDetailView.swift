@@ -171,6 +171,8 @@ struct RecordingDetailView: View {
 
     // MARK: - Markers View
 
+    @State private var selectedMarker: IntentMarker?
+
     private var markersView: some View {
         Group {
             if recording.intentMarkers.isEmpty {
@@ -190,10 +192,15 @@ struct RecordingDetailView: View {
 
                         // Timeline of markers
                         ForEach(recording.intentMarkers.sorted { $0.timestamp < $1.timestamp }) { marker in
-                            MarkerTimelineRow(marker: marker)
+                            MarkerTimelineRow(marker: marker, onTap: {
+                                selectedMarker = marker
+                            })
                         }
                     }
                     .padding(SpongeTheme.spacingM)
+                }
+                .sheet(item: $selectedMarker) { marker in
+                    MarkerContextSheet(marker: marker, fullTranscript: recording.transcriptText)
                 }
             }
         }
@@ -296,42 +303,59 @@ private struct TabSegmentButton: View {
 
 private struct MarkerTimelineRow: View {
     let marker: IntentMarker
+    let onTap: () -> Void
 
     var body: some View {
-        HStack(alignment: .top, spacing: SpongeTheme.spacingM) {
-            // Timestamp
-            Text(marker.formattedTimestamp)
-                .font(.system(.caption, design: .monospaced))
-                .foregroundColor(.secondary)
-                .frame(width: 50, alignment: .trailing)
+        Button(action: onTap) {
+            HStack(alignment: .top, spacing: SpongeTheme.spacingM) {
+                // Timestamp
+                Text(marker.formattedTimestamp)
+                    .font(.system(.caption, design: .monospaced))
+                    .foregroundColor(.secondary)
+                    .frame(width: 50, alignment: .trailing)
 
-            // Type indicator
-            Circle()
-                .fill(markerColor)
-                .frame(width: 10, height: 10)
-                .padding(.top, 4)
+                // Type indicator
+                Circle()
+                    .fill(markerColor)
+                    .frame(width: 10, height: 10)
+                    .padding(.top, 4)
 
-            // Content
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Image(systemName: marker.type.icon)
-                        .font(.caption)
-                    Text(marker.type.displayName)
-                        .font(.subheadline.weight(.medium))
+                // Content
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Image(systemName: marker.type.icon)
+                            .font(.caption)
+                        Text(marker.type.displayName)
+                            .font(.subheadline.weight(.medium))
+                    }
+                    .foregroundColor(markerColor)
+
+                    if let snapshot = marker.transcriptSnapshot {
+                        Text("\"...\(snapshot)...\"")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .lineLimit(2)
+                    }
                 }
-                .foregroundColor(markerColor)
 
-                if let snapshot = marker.transcriptSnapshot {
-                    Text("\"...\(snapshot)...\"")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .lineLimit(2)
-                }
+                Spacer()
+
+                // Click to expand indicator
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundColor(.secondary.opacity(0.5))
             }
-
-            Spacer()
+            .padding(.vertical, SpongeTheme.spacingS)
+            .contentShape(Rectangle())
         }
-        .padding(.vertical, SpongeTheme.spacingS)
+        .buttonStyle(.plain)
+        .background(
+            RoundedRectangle(cornerRadius: SpongeTheme.cornerRadiusS)
+                .fill(Color.primaryBackground.opacity(0.001))
+        )
+        .onHover { isHovered in
+            NSCursor.pointingHand.push()
+        }
     }
 
     private var markerColor: Color {
@@ -379,6 +403,151 @@ private struct MarkerCountBadge: View {
         case .reviewLater:
             return .blue
         }
+    }
+}
+
+// MARK: - Marker Context Sheet
+
+private struct MarkerContextSheet: View {
+    let marker: IntentMarker
+    let fullTranscript: String
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 8) {
+                        Image(systemName: marker.type.icon)
+                            .font(.headline)
+                            .foregroundColor(markerColor)
+                        Text(marker.type.displayName)
+                            .font(.headline)
+                            .foregroundColor(markerColor)
+                    }
+
+                    Text("at \(marker.formattedTimestamp)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
+                Spacer()
+
+                Button("Done") {
+                    dismiss()
+                }
+                .keyboardShortcut(.defaultAction)
+            }
+            .padding(SpongeTheme.spacingM)
+
+            Divider()
+
+            // Context view
+            ScrollView {
+                VStack(alignment: .leading, spacing: SpongeTheme.spacingM) {
+                    if let context = extractContext() {
+                        // Before context
+                        if !context.before.isEmpty {
+                            Text(context.before)
+                                .font(.body)
+                                .foregroundColor(.secondary)
+                                .lineSpacing(4)
+                        }
+
+                        // Highlighted snapshot
+                        if let snapshot = marker.transcriptSnapshot, !snapshot.isEmpty {
+                            Text(snapshot)
+                                .font(.body.weight(.medium))
+                                .foregroundColor(.primary)
+                                .padding(SpongeTheme.spacingS)
+                                .background(
+                                    RoundedRectangle(cornerRadius: SpongeTheme.cornerRadiusS)
+                                        .fill(markerColor.opacity(0.15))
+                                )
+                                .lineSpacing(4)
+                        }
+
+                        // After context
+                        if !context.after.isEmpty {
+                            Text(context.after)
+                                .font(.body)
+                                .foregroundColor(.secondary)
+                                .lineSpacing(4)
+                        }
+                    } else {
+                        // Fallback if context extraction fails
+                        VStack(spacing: SpongeTheme.spacingS) {
+                            if let snapshot = marker.transcriptSnapshot {
+                                Text("Marked content:")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+
+                                Text(snapshot)
+                                    .font(.body)
+                                    .lineSpacing(4)
+                                    .padding(SpongeTheme.spacingS)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: SpongeTheme.cornerRadiusS)
+                                            .fill(markerColor.opacity(0.15))
+                                    )
+                            }
+
+                            Text("Full transcript not available")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+                .padding(SpongeTheme.spacingM)
+            }
+        }
+        .frame(minWidth: 500, minHeight: 400)
+    }
+
+    private var markerColor: Color {
+        switch marker.type {
+        case .confused:
+            return .orange
+        case .important:
+            return .red
+        case .examRelevant:
+            return .yellow
+        case .reviewLater:
+            return .blue
+        }
+    }
+
+    /// Extracts context around the marker from the full transcript
+    private func extractContext() -> (before: String, after: String)? {
+        guard !fullTranscript.isEmpty,
+              let snapshot = marker.transcriptSnapshot,
+              !snapshot.isEmpty else {
+            return nil
+        }
+
+        // Find the snapshot in the full transcript
+        guard let range = fullTranscript.range(of: snapshot, options: [.caseInsensitive, .diacriticInsensitive]) else {
+            return nil
+        }
+
+        let beforeIndex = range.lowerBound
+        let afterIndex = range.upperBound
+
+        // Extract ~150 words before
+        let beforeText = String(fullTranscript[..<beforeIndex])
+        let beforeWords = beforeText.split(separator: " ")
+        let beforeContext = beforeWords.suffix(150).joined(separator: " ")
+
+        // Extract ~150 words after
+        let afterText = String(fullTranscript[afterIndex...])
+        let afterWords = afterText.split(separator: " ")
+        let afterContext = afterWords.prefix(150).joined(separator: " ")
+
+        return (
+            before: beforeContext.isEmpty ? "" : beforeContext + " ",
+            after: afterContext.isEmpty ? "" : " " + afterContext
+        )
     }
 }
 

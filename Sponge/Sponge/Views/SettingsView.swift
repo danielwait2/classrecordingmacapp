@@ -32,8 +32,8 @@ struct SettingsView: View {
                         VStack(spacing: 16) {
                             SettingRow(
                                 icon: "mic.fill",
-                                title: "Real-time Transcription",
-                                description: "Transcribe audio as you record"
+                                title: "Live Transcription",
+                                description: "Transcribe during recording (uses more battery)"
                             ) {
                                 Toggle("", isOn: $realtimeTranscription)
                                     .labelsHidden()
@@ -42,8 +42,14 @@ struct SettingsView: View {
                             if !realtimeTranscription {
                                 InfoBox(
                                     icon: "battery.100.bolt",
-                                    message: "Battery saver mode enabled. Transcription will happen after recording completes.",
+                                    message: "Battery saver enabled. Audio will be transcribed after you finish recording.",
                                     color: .green
+                                )
+                            } else {
+                                InfoBox(
+                                    icon: "waveform",
+                                    message: "Live transcription enabled. Your audio will be transcribed as you record.",
+                                    color: .blue
                                 )
                             }
                         }

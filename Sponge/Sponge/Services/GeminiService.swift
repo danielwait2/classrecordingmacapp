@@ -288,12 +288,11 @@ class GeminiService {
         Here's what the student missed (the recent content they need to catch up on):
         \(recentTranscript)
 
-        Provide a concise catch-up summary (2-3 short paragraphs) that:
-        1. Explains what key points were just covered
-        2. Why these points matter in the context of the lecture
-        3. How they connect to what came before
+        Provide a very brief catch-up summary (2-3 sentences maximum) that:
+        - States the single most important concept that was just covered
+        - Explains why it matters
 
-        Keep it brief and actionable - the student needs to quickly get back on track.
+        Keep it extremely concise - the student needs to quickly get back on track without reading much.
         """
 
         return try await makeGeminiRequest(prompt: prompt, apiKey: apiKey)

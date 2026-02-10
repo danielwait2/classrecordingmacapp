@@ -152,7 +152,8 @@ class RecordingViewModel: ObservableObject {
 
         let recordingDate = Date()
         let audioURL = result.url
-        let finalTranscript = transcribedText // Use live transcript directly
+        let wasRealtimeTranscription = realtimeTranscription
+
         // Combine title with notes if title exists
         let finalUserNotes: String
         if !userNotesTitle.isEmpty {
@@ -165,20 +166,84 @@ class RecordingViewModel: ObservableObject {
         let finalIntentMarkers = intentMarkers
         let finalCatchUpSummaries = lastCatchUpSummary.map { [$0] } ?? []
 
-        processRecording(
-            classId: classModel.id,
-            date: recordingDate,
-            duration: result.duration,
-            audioFileName: audioURL.lastPathComponent,
-            transcript: finalTranscript,
-            userNotes: finalUserNotes,
-            intentMarkers: finalIntentMarkers,
-            catchUpSummaries: finalCatchUpSummaries,
-            classModel: classModel,
-            classViewModel: classViewModel
-        )
+        // If transcription was disabled during recording, transcribe the file now
+        if !wasRealtimeTranscription {
+            Task { @MainActor in
+                do {
+                    // Show transcription progress
+                    self.toastMessage = ToastMessage(
+                        message: "Transcribing audio file...",
+                        icon: "waveform",
+                        type: .info
+                    )
 
-        reset()
+                    let transcript = try await transcriptionService.transcribeAudioFile(url: audioURL)
+
+                    // Update toast to show transcription completed
+                    if !transcript.isEmpty {
+                        self.toastMessage = ToastMessage(
+                            message: "Transcription complete",
+                            icon: "checkmark.circle.fill",
+                            type: .success
+                        )
+                    }
+
+                    self.processRecording(
+                        classId: classModel.id,
+                        date: recordingDate,
+                        duration: result.duration,
+                        audioFileName: audioURL.lastPathComponent,
+                        transcript: transcript,
+                        userNotes: finalUserNotes,
+                        intentMarkers: finalIntentMarkers,
+                        catchUpSummaries: finalCatchUpSummaries,
+                        classModel: classModel,
+                        classViewModel: classViewModel
+                    )
+                } catch {
+                    self.errorMessage = "Failed to transcribe recording: \(error.localizedDescription)"
+                    self.toastMessage = ToastMessage(
+                        message: "Transcription failed",
+                        icon: "exclamationmark.triangle.fill",
+                        type: .error
+                    )
+
+                    // Still process recording without transcript
+                    self.processRecording(
+                        classId: classModel.id,
+                        date: recordingDate,
+                        duration: result.duration,
+                        audioFileName: audioURL.lastPathComponent,
+                        transcript: "",
+                        userNotes: finalUserNotes,
+                        intentMarkers: finalIntentMarkers,
+                        catchUpSummaries: finalCatchUpSummaries,
+                        classModel: classModel,
+                        classViewModel: classViewModel
+                    )
+                }
+
+                self.reset()
+            }
+        } else {
+            // Use live transcript directly
+            let finalTranscript = transcribedText
+
+            processRecording(
+                classId: classModel.id,
+                date: recordingDate,
+                duration: result.duration,
+                audioFileName: audioURL.lastPathComponent,
+                transcript: finalTranscript,
+                userNotes: finalUserNotes,
+                intentMarkers: finalIntentMarkers,
+                catchUpSummaries: finalCatchUpSummaries,
+                classModel: classModel,
+                classViewModel: classViewModel
+            )
+
+            reset()
+        }
     }
 
     private func processRecording(
