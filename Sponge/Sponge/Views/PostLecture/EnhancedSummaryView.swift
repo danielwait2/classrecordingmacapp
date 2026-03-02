@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Tab-based view showing available summaries from a recording
 struct EnhancedSummaryView: View {
-    let recording: SDRecording
+    @Bindable var recording: SDRecording
 
     @State private var selectedTab: SummaryTab = .overview
 

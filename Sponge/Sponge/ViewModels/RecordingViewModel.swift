@@ -287,7 +287,14 @@ class RecordingViewModel: ObservableObject {
 
     // MARK: - Enhanced Content Generation
 
-    private func generateEnhancedContent(for recording: SDRecording, classModel: SDClass, classViewModel: ClassViewModel) async {
+    /// Regenerates all AI content (class notes, enhanced summary, recall prompts) for an existing recording.
+    /// Call this from the detail view when the user wants to retry after a failure.
+    func regenerateAIContent(for recording: SDRecording) async {
+        guard !recording.transcriptText.isEmpty else { return }
+        await generateEnhancedContent(for: recording, classModel: nil, classViewModel: nil)
+    }
+
+    private func generateEnhancedContent(for recording: SDRecording, classModel: SDClass?, classViewModel: ClassViewModel?) async {
         await MainActor.run {
             self.isGeneratingNotes = true
         }
@@ -331,10 +338,12 @@ class RecordingViewModel: ObservableObject {
                 recording.enhancedSummary = enhancedSummary
                 recording.recallPrompts = recallPrompts
 
-                classViewModel.updateRecording(recording)
+                classViewModel?.updateRecording(recording)
                 self.isGeneratingNotes = false
 
-                self.exportPDF(for: recording, classModel: classModel, classViewModel: classViewModel)
+                if let classModel, let classViewModel {
+                    self.exportPDF(for: recording, classModel: classModel, classViewModel: classViewModel)
+                }
             }
 
         } catch {
@@ -342,7 +351,9 @@ class RecordingViewModel: ObservableObject {
                 self.isGeneratingNotes = false
                 self.errorMessage = error.localizedDescription
 
-                self.exportPDF(for: recording, classModel: classModel, classViewModel: classViewModel)
+                if let classModel, let classViewModel {
+                    self.exportPDF(for: recording, classModel: classModel, classViewModel: classViewModel)
+                }
             }
         }
     }

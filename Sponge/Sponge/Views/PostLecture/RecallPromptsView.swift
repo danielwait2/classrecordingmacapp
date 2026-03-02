@@ -2,7 +2,7 @@ import SwiftUI
 
 /// View for practicing recall with generated questions
 struct RecallPromptsView: View {
-    let recording: SDRecording
+    @Bindable var recording: SDRecording
 
     @State private var viewMode: ViewMode = .list
     @State private var currentCardIndex = 0

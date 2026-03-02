@@ -2,10 +2,11 @@ import SwiftUI
 
 /// Detail view for a recording with segmented navigation
 struct RecordingDetailView: View {
-    let recording: SDRecording
+    @Bindable var recording: SDRecording
     let className: String
 
     @State private var selectedTab: DetailTab = .transcript
+    @StateObject private var viewModel = RecordingViewModel()
     @Environment(\.dismiss) private var dismiss
 
     enum DetailTab: String, CaseIterable, Identifiable {
@@ -44,6 +45,14 @@ struct RecordingDetailView: View {
             tabContent
         }
         .frame(minWidth: 600, minHeight: 500)
+        .alert("Regeneration Failed", isPresented: Binding(
+            get: { viewModel.errorMessage != nil },
+            set: { if !$0 { viewModel.errorMessage = nil } }
+        )) {
+            Button("OK") { viewModel.errorMessage = nil }
+        } message: {
+            Text(viewModel.errorMessage ?? "")
+        }
     }
 
     // MARK: - Header
@@ -63,6 +72,27 @@ struct RecordingDetailView: View {
             }
 
             Spacer()
+
+            if viewModel.isGeneratingNotes {
+                HStack(spacing: SpongeTheme.spacingS) {
+                    ProgressView()
+                        .scaleEffect(0.7)
+                    Text("Regenerating...")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+            } else {
+                Button {
+                    Task {
+                        await viewModel.regenerateAIContent(for: recording)
+                    }
+                } label: {
+                    Label("Regenerate AI Notes", systemImage: "arrow.clockwise.circle")
+                }
+                .buttonStyle(.bordered)
+                .disabled(recording.transcriptText.isEmpty)
+                .help(recording.transcriptText.isEmpty ? "No transcript available to generate notes from" : "Regenerate AI notes, summaries, and recall prompts")
+            }
 
             Button("Done") {
                 dismiss()
