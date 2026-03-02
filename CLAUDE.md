@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Sponge is a macOS lecture recording and AI-powered transcription app for students. It records lectures, transcribes them in real-time using Apple Speech Recognition, generates AI-enhanced study materials via Google Gemini API, and exports everything to PDF.
+Sponge is a macOS lecture recording and AI-powered transcription app for students. It records lectures, transcribes them in real-time using Apple's SpeechAnalyzer API (Voice Memos-level quality), generates AI-enhanced study materials via Google Gemini API, and exports everything to PDF.
 
-**Tech Stack:** SwiftUI + SwiftData (macOS 14+)
+**Tech Stack:** SwiftUI + SwiftData (macOS 26+)
 
 ## Building & Running
 
@@ -42,15 +42,15 @@ Location: `Sponge/Sponge/Models/`
 
 **SharedAudioManager** (singleton) coordinates recording and transcription:
 - Manages a single `AVAudioEngine` instance shared between recording and transcription
-- Installs a tap on the microphone input to feed audio to speech recognition
+- Installs a tap on the microphone input to feed audio to SpeechAnalyzer
 - Runs on audio thread for performance; must snapshot state atomically when accessing from other threads
 - Uses thread-safe tuple destructuring pattern: `let (a, b) = queue.sync { (self._a, self._b) }`
 
 **Key Files:**
 - `SharedAudioManager.swift` — Core audio management
 - `AudioRecordingService.swift` — Recording-specific logic
-- `TranscriptionService.swift` — Speech recognition integration
-- `SpeechAnalyzerService.swift` — Modern transcription mode with text accumulation
+- `TranscriptionService.swift` — Wrapper for SpeechAnalyzer integration
+- `SpeechAnalyzerService.swift` — Voice Memos-level transcription using macOS 26+ SpeechAnalyzer API
 
 **Thread Safety Notes:**
 - Audio callbacks run on the audio thread; snapshot state atomically
@@ -235,5 +235,14 @@ See CHANGELOG.md for full details.
 
 ## Deployment Target
 
-- **macOS**: 14.0 minimum
+- **macOS**: 26.0 minimum (Tahoe)
 - **iOS**: Not actively developed (code cleanup removed iOS-specific paths)
+
+## macOS 26 SpeechAnalyzer Features
+
+The app uses Apple's latest SpeechAnalyzer and SpeechTranscriber APIs (announced at WWDC 2025):
+- **Voice Memos-level quality**: Same high-quality transcription as Apple's Voice Memos app
+- **On-device processing**: Processes audio on-device, avoiding network overhead
+- **Progressive transcription**: Real-time transcription with the `.progressiveTranscription` preset
+- **Automatic text accumulation**: Handles internal restarts gracefully to prevent word loss
+- **16-bit PCM audio**: Requires 16 kHz, 16-bit signed integer PCM format (handled automatically by audio converter)

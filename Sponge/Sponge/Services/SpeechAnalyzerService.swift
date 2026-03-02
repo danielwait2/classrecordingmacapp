@@ -9,7 +9,6 @@ import Foundation
 import Speech
 import AVFoundation
 
-@available(macOS 26.0, *)
 class SpeechAnalyzerService: ObservableObject {
     @Published var transcribedText: String = ""
     @Published var isTranscribing: Bool = false
