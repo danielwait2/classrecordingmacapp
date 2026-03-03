@@ -22,6 +22,13 @@ If the build fails, fix errors before proceeding.
 Spawn a general-purpose agent with this prompt:
 > "Review the following changed Swift files for bugs, SwiftUI/SwiftData anti-patterns, thread safety issues, and edge cases. Files changed: [list files]. Be concise — report only real problems, not style preferences."
 
+### Step 2.5 — Update CHANGELOG.md (required before every push)
+Add a 1-2 sentence entry at the top of `CHANGELOG.md` describing what changed. Format:
+```
+## YYYY-MM-DD
+Brief description of what was added/fixed/changed.
+```
+
 ### Step 3 — Run the app (after build succeeds)
 ```bash
 open /Users/danielwait/Library/Developer/Xcode/DerivedData/Sponge-abyqkaxkuzaomxcgonignswyrnps/Build/Products/Debug/Sponge.app
