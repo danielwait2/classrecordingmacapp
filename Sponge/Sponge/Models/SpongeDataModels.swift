@@ -7,6 +7,12 @@ final class SDClass: Identifiable {
     var name: String
     var folderBookmark: Data?
 
+    // Schedule: days stored as a bitmask (Sun=1, Mon=2, Tue=4, Wed=8, Thu=16, Fri=32, Sat=64)
+    // Times stored as minutes since midnight (e.g. 9:30 AM = 570)
+    var scheduleDaysMask: Int = 0       // 0 = no schedule set
+    var scheduleStartMinute: Int = 540  // default 9:00 AM
+    var scheduleEndMinute: Int = 600    // default 10:00 AM
+
     @Relationship(deleteRule: .cascade, inverse: \SDRecording.sdClass)
     var recordings: [SDRecording] = []
 
@@ -14,6 +20,51 @@ final class SDClass: Identifiable {
         self.id = id
         self.name = name
         self.folderBookmark = folderBookmark
+    }
+
+    // MARK: - Schedule Helpers
+
+    var hasSchedule: Bool { scheduleDaysMask != 0 }
+
+    static let dayBits: [(weekday: Int, label: String)] = [
+        (2, "Mon"), (4, "Tue"), (8, "Wed"), (16, "Thu"), (32, "Fri"), (64, "Sat"), (1, "Sun")
+    ]
+
+    func isScheduled(on weekday: Int) -> Bool {
+        // weekday is Calendar.current.component(.weekday): Sun=1 … Sat=7
+        // Our bitmask stores bit = 2^(weekday-1): Sun=1, Mon=2, Tue=4 … Sat=64
+        let bit = 1 << (weekday - 1)
+        return scheduleDaysMask & bit != 0
+    }
+
+    /// Returns true if the given date falls within this class's scheduled window (±15 min buffer).
+    func isInSession(at date: Date = Date()) -> Bool {
+        guard hasSchedule else { return false }
+        let cal = Calendar.current
+        let weekday = cal.component(.weekday, from: date)
+        guard isScheduled(on: weekday) else { return false }
+        let minuteOfDay = cal.component(.hour, from: date) * 60 + cal.component(.minute, from: date)
+        return minuteOfDay >= (scheduleStartMinute - 15) && minuteOfDay <= (scheduleEndMinute + 15)
+    }
+
+    var scheduleDisplayString: String {
+        guard hasSchedule else { return "No schedule" }
+        // dayBits entries: weekday is the raw bit value; convert back to Calendar weekday for isScheduled()
+        // Calendar weekday: Sun=1, Mon=2 … Sat=7. Our bit = 2^(weekday-1).
+        let days = Self.dayBits.filter { entry in
+            scheduleDaysMask & entry.weekday != 0
+        }.map { $0.label }
+        let start = minutesToTimeString(scheduleStartMinute)
+        let end = minutesToTimeString(scheduleEndMinute)
+        return "\(days.joined(separator: "/"))  \(start)–\(end)"
+    }
+
+    private func minutesToTimeString(_ minutes: Int) -> String {
+        let h = minutes / 60
+        let m = minutes % 60
+        let ampm = h < 12 ? "AM" : "PM"
+        let hour12 = h == 0 ? 12 : (h > 12 ? h - 12 : h)
+        return String(format: "%d:%02d %@", hour12, m, ampm)
     }
 
     // MARK: - Folder Resolution

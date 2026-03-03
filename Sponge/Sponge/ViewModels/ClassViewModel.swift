@@ -9,6 +9,7 @@ class ClassViewModel: ObservableObject {
     @Published var recordings: [SDRecording] = []
     @Published var selectedClass: SDClass?
     @Published var lastError: String?
+    @Published var suggestedClassBanner: String? // non-nil shows the auto-select banner
 
     private let logger = Logger(subsystem: "com.sponge.app", category: "ClassViewModel")
     private let persistence = PersistenceService.shared
@@ -22,8 +23,15 @@ class ClassViewModel: ObservableObject {
 
     // MARK: - Class Management
 
-    func addClass(name: String, folderURL: URL?) {
+    func addClass(name: String, folderURL: URL?,
+                  scheduleDaysMask: Int = 0,
+                  scheduleStartMinute: Int = 540,
+                  scheduleEndMinute: Int = 600) {
         let newClass = persistence.addClass(name: name, folderURL: folderURL)
+        newClass.scheduleDaysMask = scheduleDaysMask
+        newClass.scheduleStartMinute = scheduleStartMinute
+        newClass.scheduleEndMinute = scheduleEndMinute
+        persistence.saveContext()
         classes.append(newClass)
 
         if selectedClass == nil {
@@ -92,9 +100,19 @@ class ClassViewModel: ObservableObject {
 
     private func loadClasses() {
         classes = persistence.fetchClasses()
-        if selectedClass == nil {
+
+        // Auto-select: prefer a class currently in session; fall back to first class
+        if let inSession = suggestedClass() {
+            selectedClass = inSession
+            suggestedClassBanner = "Suggested: \(inSession.name) is on your schedule right now"
+        } else if selectedClass == nil {
             selectedClass = classes.first
         }
+    }
+
+    /// Returns the class currently scheduled at the given time, if any.
+    func suggestedClass(at date: Date = Date()) -> SDClass? {
+        classes.first { $0.isInSession(at: date) }
     }
 
     private func loadRecordings() {

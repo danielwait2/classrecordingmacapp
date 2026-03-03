@@ -1,6 +1,9 @@
 # Changelog
 
 ## 2026-03-03
+Added class schedule feature: students can set days and times for each class in the class editor. When the app opens during a scheduled class window (±15 min), it auto-selects that class and shows a banner. Schedule is stored as a bitmask and minutes-since-midnight in SDClass.
+
+## 2026-03-03
 Reordered post-recording pipeline so on-device offline transcript pass completes before AI notes and flashcards are generated. Notes now always use the improved transcript, not the raw live one.
 
 ## 2026-03-03

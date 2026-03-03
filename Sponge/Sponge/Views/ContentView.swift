@@ -76,6 +76,15 @@ struct ContentView: View {
                 if classViewModel.classes.isEmpty {
                     showingAddClass = true
                 }
+                // If a class is scheduled right now, surface a banner so the user knows
+                if let banner = classViewModel.suggestedClassBanner {
+                    recordingViewModel.toastMessage = ToastMessage(
+                        message: banner,
+                        icon: "calendar.badge.clock",
+                        type: .info
+                    )
+                    classViewModel.suggestedClassBanner = nil
+                }
             }
             .toast($recordingViewModel.toastMessage)
         }
