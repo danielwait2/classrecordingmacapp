@@ -238,4 +238,96 @@ class SpeechAnalyzerService: ObservableObject {
             self.error = nil
         }
     }
+
+    // MARK: - Offline File Transcription
+
+    /// Transcribes a saved audio file using the `.offlineTranscription` preset, which uses full
+    /// bidirectional context for higher accuracy than the live progressive pass.
+    /// This is a static-style method — it creates its own isolated analyzer and does not
+    /// affect any live transcription session in progress.
+    func transcribeFile(at fileURL: URL) async throws -> String {
+        guard FileManager.default.fileExists(atPath: fileURL.path) else {
+            throw NSError(domain: "SpeechAnalyzerService", code: 1,
+                          userInfo: [NSLocalizedDescriptionKey: "Audio file not found at \(fileURL.path)"])
+        }
+
+        // Create an isolated transcriber using the standard transcription preset.
+        // This uses a non-streaming evaluation path suitable for pre-recorded files.
+        let offlineTranscriber = SpeechTranscriber(
+            locale: Locale.current,
+            preset: .transcription
+        )
+
+        // Negotiate the correct format for the offline model
+        let targetFormat: AVAudioFormat
+        if let negotiated = try? await SpeechAnalyzer.bestAvailableAudioFormat(compatibleWith: [offlineTranscriber]) {
+            targetFormat = negotiated
+        } else if let fallback = AVAudioFormat(commonFormat: .pcmFormatInt16, sampleRate: 16000, channels: 1, interleaved: false) {
+            targetFormat = fallback
+        } else {
+            throw NSError(domain: "SpeechAnalyzerService", code: 2,
+                          userInfo: [NSLocalizedDescriptionKey: "Could not create audio format for offline transcription"])
+        }
+
+        // Build the input stream
+        let (inputSequence, inputContinuation) = AsyncStream<AnalyzerInput>.makeStream()
+
+        let offlineAnalyzer = SpeechAnalyzer(
+            inputSequence: inputSequence,
+            modules: [offlineTranscriber]
+        )
+
+        let audioFormatHint: AVAudioFormat? = nil
+        try await offlineAnalyzer.prepareToAnalyze(in: audioFormatHint)
+
+        // Collect the final result before we start feeding audio
+        async let transcriptTask: String = {
+            var fullText = ""
+            do {
+                for try await result in offlineTranscriber.results {
+                    // Offline preset emits a single finalized result at the end
+                    fullText = String(result.text.characters)
+                }
+            } catch {
+                print("SpeechAnalyzerService offline: results error: \(error)")
+            }
+            return fullText
+        }()
+
+        // Read the audio file and feed it into the analyzer
+        let audioFile = try AVAudioFile(forReading: fileURL)
+        let converter = AVAudioConverter(from: audioFile.processingFormat, to: targetFormat)
+
+        let readBufferSize: AVAudioFrameCount = 4096
+        let readBuffer = AVAudioPCMBuffer(pcmFormat: audioFile.processingFormat, frameCapacity: readBufferSize)!
+
+        while audioFile.framePosition < audioFile.length {
+            let framesToRead = min(readBufferSize, AVAudioFrameCount(audioFile.length - audioFile.framePosition))
+            readBuffer.frameLength = framesToRead
+            try audioFile.read(into: readBuffer, frameCount: framesToRead)
+
+            // Convert to the target format
+            let outputCapacity = AVAudioFrameCount(Double(framesToRead) * targetFormat.sampleRate / audioFile.processingFormat.sampleRate) + 1
+            guard let convertedBuffer = AVAudioPCMBuffer(pcmFormat: targetFormat, frameCapacity: outputCapacity) else { continue }
+
+            var hasData = true
+            converter?.convert(to: convertedBuffer, error: nil) { _, outStatus in
+                if hasData {
+                    hasData = false
+                    outStatus.pointee = .haveData
+                    return readBuffer
+                }
+                outStatus.pointee = .noDataNow
+                return nil
+            }
+
+            inputContinuation.yield(AnalyzerInput(buffer: convertedBuffer))
+        }
+
+        // Signal end of audio — triggers finalization of the offline model
+        inputContinuation.finish()
+
+        let result = await transcriptTask
+        return result
+    }
 }

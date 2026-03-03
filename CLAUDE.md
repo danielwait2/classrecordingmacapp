@@ -22,6 +22,16 @@ If the build fails, fix errors before proceeding.
 Spawn a general-purpose agent with this prompt:
 > "Review the following changed Swift files for bugs, SwiftUI/SwiftData anti-patterns, thread safety issues, and edge cases. Files changed: [list files]. Be concise — report only real problems, not style preferences."
 
+### When research is needed
+If a task requires deep knowledge of an undocumented API, SDK behavior, or best practices that can't be verified from the codebase, **do not guess**. Instead, generate a Gemini Deep Research prompt and share it with the user before proceeding. The user will run the research and paste the results back.
+
+Format for the prompt handoff:
+> "I need research before implementing this. Here is a Gemini Deep Research prompt you can use:
+>
+> [prompt]
+>
+> Once you have the results, paste them here and I'll continue."
+
 ### Step 2.5 — Update CHANGELOG.md (required before every push)
 Add a 1-2 sentence entry at the top of `CHANGELOG.md` describing what changed. Format:
 ```

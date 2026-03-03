@@ -1,6 +1,9 @@
 # Changelog
 
 ## 2026-03-03
+Added on-device SpeechAnalyzer offline transcript upgrade that runs automatically after every live recording (replacing legacy SFSpeechRecognizer). Added manual "Improve Transcript" button in the detail view that uploads audio to Gemini 2.5 Flash for the highest-quality transcript with punctuation and speaker labels (~$0.07/hr). Updated CLAUDE.md to require generating a Gemini Deep Research prompt whenever an API or SDK needs research before implementation.
+
+## 2026-03-03
 Added Gemini audio transcription pipeline: after recording stops, the M4A file is uploaded to Gemini 2.5 Flash via the Files API to produce a high-quality transcript with punctuation, capitalization, and speaker labels (~$0.07/hr). Also improved SpeechAnalyzerService to use `bestAvailableAudioFormat` for dynamic format negotiation instead of hardcoded 16kHz PCM, reducing format-mismatch crashes. Reset TCC permissions to fix the app crash on Record tap.
 
 ## 2026-03-02

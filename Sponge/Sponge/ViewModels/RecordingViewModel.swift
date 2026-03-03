@@ -288,45 +288,72 @@ class RecordingViewModel: ObservableObject {
                 self.exportPDF(for: recording, classModel: classModel, classViewModel: classViewModel)
             }
 
-            // In the background, upgrade the transcript via Gemini audio transcription
-            // for better punctuation, accuracy, and speaker diarization.
-            // Skipped when battery-save mode already ran an on-device transcription pass.
+            // For live-recorded files, run the on-device SpeechAnalyzer offline pass automatically
+            // (free, private, better accuracy than the live progressive transcript).
+            // Gemini audio transcription is NOT auto-triggered — the user initiates it manually
+            // from the recording detail view via "Improve Transcript with AI".
             if !skipGeminiUpgrade {
-                self.upgradeTranscriptWithGeminiAudio(for: recording, audioURL: audioURL, classModel: classModel, classViewModel: classViewModel)
+                self.runOfflineTranscriptUpgrade(for: recording, audioURL: audioURL, classModel: classModel, classViewModel: classViewModel)
             }
         }
     }
 
-    // MARK: - Gemini Audio Transcript Upgrade
+    // MARK: - Post-Processing Pipeline
 
-    /// After recording and AI notes are saved, silently upgrade the transcript using Gemini's
-    /// native audio understanding — adding punctuation, capitalization, and speaker labels.
-    /// Only runs if the user has a Gemini API key configured.
-    private func upgradeTranscriptWithGeminiAudio(for recording: SDRecording, audioURL: URL, classModel: SDClass?, classViewModel: ClassViewModel?) {
-        // Only run if an API key is configured right now
-        guard let apiKey = KeychainHelper.shared.getGeminiAPIKey(), !apiKey.isEmpty else { return }
-        // Hold the key so the caller verified availability; GeminiService re-reads it at call time.
-        // TOCTOU risk is accepted: if the key is removed in the milliseconds between here and the
-        // upload, GeminiService will throw .noAPIKey and the catch block handles it gracefully.
-        _ = apiKey
-
+    /// Silently upgrades a live-recorded transcript using the on-device SpeechAnalyzer pass.
+    /// Runs automatically after every live recording. Free and private.
+    private func runOfflineTranscriptUpgrade(for recording: SDRecording, audioURL: URL, classModel: SDClass?, classViewModel: ClassViewModel?) {
         Task { @MainActor in
             self.isImprovingTranscript = true
-            self.toastMessage = ToastMessage(message: "Improving transcript quality...", icon: "sparkles", type: .info)
+            self.toastMessage = ToastMessage(message: "Refining transcript on-device...", icon: "waveform.badge.magnifyingglass", type: .info)
 
             do {
-                let improvedTranscript = try await geminiService.transcribeAudioFile(at: audioURL)
-                // Always reset state before any early return
+                let offlineTranscript = try await transcriptionService.transcribeAudioFile(url: audioURL)
+                if !offlineTranscript.isEmpty {
+                    recording.transcriptText = offlineTranscript
+                    classViewModel?.updateRecording(recording)
+                    self.toastMessage = ToastMessage(message: "Transcript refined", icon: "checkmark.circle", type: .success)
+                }
+            } catch {
+                print("Offline transcript upgrade failed (non-fatal): \(error.localizedDescription)")
+            }
+
+            self.isImprovingTranscript = false
+        }
+    }
+
+    // MARK: - Manual Gemini Audio Transcription
+
+    /// Manually triggered by the user from the recording detail view.
+    /// Uploads the audio file to Gemini 2.5 Flash for the highest-quality transcript
+    /// with punctuation, speaker labels, and domain vocabulary correction.
+    func improveTranscriptWithGemini(for recording: SDRecording) async {
+        guard let audioURL = recording.audioFileURL() else {
+            await MainActor.run { self.errorMessage = "Audio file not found for this recording." }
+            return
+        }
+        guard let apiKey = KeychainHelper.shared.getGeminiAPIKey(), !apiKey.isEmpty else {
+            await MainActor.run { self.errorMessage = "Add a Gemini API key in Settings to use this feature." }
+            return
+        }
+        _ = apiKey
+
+        await MainActor.run {
+            self.isImprovingTranscript = true
+            self.toastMessage = ToastMessage(message: "Uploading audio to Gemini...", icon: "sparkles", type: .info)
+        }
+
+        do {
+            let improvedTranscript = try await geminiService.transcribeAudioFile(at: audioURL)
+            await MainActor.run {
                 defer { self.isImprovingTranscript = false }
                 guard !improvedTranscript.isEmpty else { return }
-
                 recording.transcriptText = improvedTranscript
-                classViewModel?.updateRecording(recording)
-
                 self.toastMessage = ToastMessage(message: "Transcript upgraded with AI", icon: "sparkles", type: .success)
-            } catch {
-                // Non-fatal: on-device transcript already saved; just log and move on
-                print("GeminiAudio upgrade failed (non-fatal): \(error.localizedDescription)")
+            }
+        } catch {
+            await MainActor.run {
+                self.errorMessage = "Gemini transcription failed: \(error.localizedDescription)"
                 self.isImprovingTranscript = false
             }
         }

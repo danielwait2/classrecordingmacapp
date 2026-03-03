@@ -59,36 +59,9 @@ class TranscriptionService: ObservableObject {
         analyzer.reset()
     }
 
-    /// Transcribes an audio file from a URL (used for battery save mode)
+    /// Transcribes an audio file from a URL using SpeechAnalyzer with the `.offlineTranscription`
+    /// preset, which uses full bidirectional context for higher accuracy than the live progressive pass.
     func transcribeAudioFile(url: URL) async throws -> String {
-        guard FileManager.default.fileExists(atPath: url.path) else {
-            throw NSError(domain: "TranscriptionService", code: 1, userInfo: [NSLocalizedDescriptionKey: "Audio file not found"])
-        }
-
-        let recognizer = SFSpeechRecognizer()
-        guard let recognizer = recognizer else {
-            throw NSError(domain: "TranscriptionService", code: 2, userInfo: [NSLocalizedDescriptionKey: "Speech recognizer not available"])
-        }
-
-        guard recognizer.isAvailable else {
-            throw NSError(domain: "TranscriptionService", code: 3, userInfo: [NSLocalizedDescriptionKey: "Speech recognizer not available"])
-        }
-
-        let request = SFSpeechURLRecognitionRequest(url: url)
-        request.shouldReportPartialResults = false
-        request.requiresOnDeviceRecognition = false
-
-        return try await withCheckedThrowingContinuation { continuation in
-            recognizer.recognitionTask(with: request) { result, error in
-                if let error = error {
-                    continuation.resume(throwing: error)
-                    return
-                }
-
-                if let result = result, result.isFinal {
-                    continuation.resume(returning: result.bestTranscription.formattedString)
-                }
-            }
-        }
+        try await analyzer.transcribeFile(at: url)
     }
 }

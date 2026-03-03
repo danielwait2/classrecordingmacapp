@@ -73,25 +73,34 @@ struct RecordingDetailView: View {
 
             Spacer()
 
-            if viewModel.isGeneratingNotes {
+            if viewModel.isGeneratingNotes || viewModel.isImprovingTranscript {
                 HStack(spacing: SpongeTheme.spacingS) {
                     ProgressView()
                         .scaleEffect(0.7)
-                    Text("Regenerating...")
+                    Text(viewModel.isImprovingTranscript ? "Improving transcript..." : "Regenerating...")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
             } else {
-                Button {
-                    Task {
-                        await viewModel.regenerateAIContent(for: recording)
+                HStack(spacing: SpongeTheme.spacingS) {
+                    Button {
+                        Task { await viewModel.improveTranscriptWithGemini(for: recording) }
+                    } label: {
+                        Label("Improve Transcript", systemImage: "sparkles")
                     }
-                } label: {
-                    Label("Regenerate AI Notes", systemImage: "arrow.clockwise.circle")
+                    .buttonStyle(.bordered)
+                    .disabled(recording.audioFileURL() == nil)
+                    .help("Upload audio to Gemini AI for a higher-quality transcript with punctuation and speaker labels (~$0.07/hr)")
+
+                    Button {
+                        Task { await viewModel.regenerateAIContent(for: recording) }
+                    } label: {
+                        Label("Regenerate Notes", systemImage: "arrow.clockwise.circle")
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(recording.transcriptText.isEmpty)
+                    .help(recording.transcriptText.isEmpty ? "No transcript available" : "Regenerate AI notes, summaries, and recall prompts")
                 }
-                .buttonStyle(.bordered)
-                .disabled(recording.transcriptText.isEmpty)
-                .help(recording.transcriptText.isEmpty ? "No transcript available to generate notes from" : "Regenerate AI notes, summaries, and recall prompts")
             }
 
             Button("Done") {
