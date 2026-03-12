@@ -9,6 +9,8 @@ struct RecordingDetailView: View {
     @EnvironmentObject private var viewModel: RecordingViewModel
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var whisperKit = WhisperKitService.shared
+    @AppStorage("hasSeenAIFeaturesTour") private var hasSeenTour = false
+    @State private var showingTour = false
 
     enum DetailTab: String, CaseIterable, Identifiable {
         case transcript = "Transcript"
@@ -52,6 +54,17 @@ struct RecordingDetailView: View {
         }
         .background(SpongeTheme.coralPale.opacity(0.4))
         .frame(minWidth: 600, minHeight: 500)
+        .onAppear {
+            if !hasSeenTour {
+                showingTour = true
+            }
+        }
+        .sheet(isPresented: $showingTour) {
+            AIFeaturesTourView {
+                hasSeenTour = true
+                showingTour = false
+            }
+        }
         .alert("Regeneration Failed", isPresented: Binding(
             get: { viewModel.errorMessage != nil },
             set: { if !$0 { viewModel.errorMessage = nil } }
@@ -632,6 +645,113 @@ private struct MarkerContextSheet: View {
             before: beforeContext.isEmpty ? "" : beforeContext + " ",
             after: afterContext.isEmpty ? "" : " " + afterContext
         )
+    }
+}
+
+// MARK: - AI Features Tour
+
+struct AIFeaturesTourView: View {
+    let onDone: () -> Void
+
+    private let features: [(icon: String, color: Color, title: String, description: String)] = [
+        ("doc.richtext", SpongeTheme.coral, "Summaries", "Three AI-generated summaries of your lecture: a general overview, a confusion-focused recap, and an exam-oriented breakdown."),
+        ("brain.head.profile", .purple, "Recall", "Flashcard-style questions generated from your lecture to help you study with spaced repetition."),
+        ("flag.fill", .orange, "Markers", "Moments you flagged during the recording — confusion, important points, exam-relevant content — with full transcript context."),
+        ("sparkles", SpongeTheme.coral, "Improve Transcript", "Use Gemini AI to improve punctuation, fix errors, and add speaker labels to your raw transcript."),
+    ]
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            VStack(spacing: 8) {
+                ZStack {
+                    Circle()
+                        .fill(SpongeTheme.coral.opacity(0.15))
+                        .frame(width: 64, height: 64)
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 28))
+                        .foregroundColor(SpongeTheme.coral)
+                }
+
+                Text("AI Study Features")
+                    .font(.title2.weight(.bold))
+
+                Text("Sponge uses Gemini AI to turn your recordings into study materials. Here's what's available:")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 400)
+            }
+            .padding(.top, 36)
+            .padding(.horizontal, 32)
+            .padding(.bottom, 24)
+
+            Divider()
+
+            // Feature list
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(features, id: \.title) { feature in
+                    HStack(alignment: .top, spacing: 16) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(feature.color.opacity(0.12))
+                                .frame(width: 44, height: 44)
+                            Image(systemName: feature.icon)
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundColor(feature.color)
+                        }
+
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(feature.title)
+                                .font(.subheadline.weight(.semibold))
+                            Text(feature.description)
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    .padding(.horizontal, 32)
+                    .padding(.vertical, 14)
+
+                    if feature.title != features.last?.title {
+                        Divider()
+                            .padding(.leading, 92)
+                    }
+                }
+            }
+
+            Divider()
+
+            // Footer note + button
+            VStack(spacing: 14) {
+                HStack(spacing: 6) {
+                    Image(systemName: "key.fill")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text("Requires a free Gemini API key — set it in Settings → AI Notes.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
+                Button {
+                    onDone()
+                } label: {
+                    Text("Got it, let's go!")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(SpongeTheme.coral)
+                        .cornerRadius(10)
+                }
+                .buttonStyle(.plain)
+                .frame(maxWidth: 300)
+            }
+            .padding(.horizontal, 32)
+            .padding(.vertical, 24)
+        }
+        .frame(minWidth: 520)
+        .background(SpongeTheme.cream)
     }
 }
 

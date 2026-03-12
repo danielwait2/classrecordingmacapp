@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026-03-12 (v1.4)
+Major notes editor upgrade: added strikethrough, underline, highlight, checklist, block quote, horizontal rule, indent/outdent, and auto-save indicator. Full-screen recording view is now default when recording starts; collapsible recordings list. Removed meeting mode. AI features tour shown on first recording open. Unified cream background throughout.
+
 ## 2026-03-12
 Browse recordings while recording: active recording now collapses to a compact bar at the top, leaving the recordings list fully navigable. Click "Notes" to expand back to the full transcript + notes view.
 

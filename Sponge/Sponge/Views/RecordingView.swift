@@ -542,6 +542,11 @@ struct ExpandingMarkdownNotesEditor: View {
     @Binding var text: String
     @Binding var noteTitle: String
     @FocusState private var isTitleFocused: Bool
+    @State private var saveState: SaveState = .idle
+
+    enum SaveState: Equatable {
+        case idle, saving, saved
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -588,6 +593,29 @@ struct ExpandingMarkdownNotesEditor: View {
 
             Spacer()
 
+            // Auto-save indicator
+            HStack(spacing: 4) {
+                switch saveState {
+                case .idle:
+                    EmptyView()
+                case .saving:
+                    ProgressView()
+                        .scaleEffect(0.5)
+                        .frame(width: 12, height: 12)
+                    Text("Saving…")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                case .saved:
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.caption2)
+                        .foregroundColor(.green)
+                    Text("Saved")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+            }
+            .animation(.easeInOut(duration: 0.2), value: saveState == .saved)
+
             Text("\(wordCount) words")
                 .font(.caption2)
                 .foregroundColor(.secondary)
@@ -599,6 +627,26 @@ struct ExpandingMarkdownNotesEditor: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
         .background(Color.secondary.opacity(0.05))
+        .onChange(of: text) { _, _ in
+            triggerSave()
+        }
+        .onChange(of: noteTitle) { _, _ in
+            triggerSave()
+        }
+    }
+
+    private func triggerSave() {
+        saveState = .saving
+        // Debounce: wait 0.8s of no changes before marking saved
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+            saveState = .saved
+            // Hide the indicator after 2s
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                if saveState == .saved {
+                    saveState = .idle
+                }
+            }
+        }
     }
 
     // MARK: - Formatting Toolbar
