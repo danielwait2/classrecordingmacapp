@@ -1,7 +1,7 @@
 # Changelog
 
-## 2026-03-12
-Overhauled onboarding: added microphone permission priming step (step 2), fixed Gemini API key step to auto-save on paste with no separate save button, corrected API key link to aistudio.google.com/app/apikey.
+## 2026-03-12 (v1.2)
+Added Whisper model download progress banner in RecordingDetailView — users now see a clear "Downloading — first time only (~600 MB)" message instead of a frozen UI. Overhauled onboarding: added microphone permission priming step (step 2), fixed Gemini API key step to auto-save on paste with no separate save button, corrected API key link to aistudio.google.com/app/apikey.
 
 ## 2026-03-11
 Added first-launch onboarding wizard (OnboardingView): a 3-step flow (Welcome → Gemini API Key → Ready) that guides new users through setup before they hit any errors. Onboarding state persisted via AppStorage so it only shows once.

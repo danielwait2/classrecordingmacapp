@@ -8,6 +8,7 @@ struct RecordingDetailView: View {
     @State private var selectedTab: DetailTab = .transcript
     @EnvironmentObject private var viewModel: RecordingViewModel
     @Environment(\.dismiss) private var dismiss
+    @ObservedObject private var whisperKit = WhisperKitService.shared
 
     enum DetailTab: String, CaseIterable, Identifiable {
         case transcript = "Transcript"
@@ -35,6 +36,11 @@ struct RecordingDetailView: View {
         VStack(spacing: 0) {
             // Header
             header
+
+            // Whisper model download banner
+            if whisperKit.isDownloadingModel {
+                whisperDownloadBanner
+            }
 
             // Segmented control
             segmentedControl
@@ -74,7 +80,15 @@ struct RecordingDetailView: View {
 
             Spacer()
 
-            if viewModel.isGeneratingNotes || viewModel.isImprovingTranscript {
+            if whisperKit.isDownloadingModel {
+                HStack(spacing: SpongeTheme.spacingS) {
+                    ProgressView()
+                        .scaleEffect(0.7)
+                    Text("Downloading Whisper model…")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+            } else if viewModel.isGeneratingNotes || viewModel.isImprovingTranscript {
                 HStack(spacing: SpongeTheme.spacingS) {
                     ProgressView()
                         .scaleEffect(0.7)
@@ -121,6 +135,26 @@ struct RecordingDetailView: View {
         }
         .padding(SpongeTheme.spacingM)
         .background(SpongeTheme.cream)
+    }
+
+    // MARK: - Whisper Download Banner
+
+    private var whisperDownloadBanner: some View {
+        HStack(spacing: 12) {
+            ProgressView()
+                .scaleEffect(0.8)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Downloading Whisper model — first time only (~600 MB)")
+                    .font(.subheadline.weight(.medium))
+                Text("This will take a minute. The model is cached after this.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            Spacer()
+        }
+        .padding(.horizontal, SpongeTheme.spacingM)
+        .padding(.vertical, SpongeTheme.spacingS)
+        .background(SpongeTheme.coralPale.opacity(0.5))
     }
 
     // MARK: - Segmented Control
