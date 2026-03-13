@@ -6,7 +6,21 @@
         <description>Sponge app update feed</description>
         <language>en</language>
 
-                                                                <item>
+                                                                        <item>
+            <title>Version 2.1</title>
+            <pubDate>Fri, 13 Mar 2026 04:21:14 +0000</pubDate>
+            <sparkle:version>53</sparkle:version>
+            <sparkle:shortVersionString>2.1</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <enclosure
+                url="https://github.com/danielwaitworksllc/classrecordingmacapp/releases/download/v2.1/Sponge-v2.1.zip"
+                sparkle:edSignature="6WigPADokpfx1FOddxRpoLPufK/gTY1cA6gUSqHTvs5lpN8kiaOidpRHkNnU1ekM8SEqzxf4lUq4z+vvuZOiDA=="
+                length="7244966"
+                type="application/octet-stream"
+            />
+        </item>
+
+<item>
             <title>Version 2.0</title>
             <pubDate>Fri, 13 Mar 2026 00:47:47 +0000</pubDate>
             <sparkle:version>52</sparkle:version>
