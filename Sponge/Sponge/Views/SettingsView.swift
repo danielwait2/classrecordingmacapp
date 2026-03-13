@@ -311,46 +311,73 @@ private struct AboutTab: View {
     }
 
     var body: some View {
-        VStack(spacing: 24) {
-            Spacer()
+        ScrollView {
+            VStack(spacing: 24) {
+                Spacer(minLength: 16)
 
-            // App icon + name
-            VStack(spacing: 12) {
-                Image(systemName: "waveform.circle.fill")
-                    .font(.system(size: 64))
-                    .foregroundStyle(SpongeTheme.coral)
+                // App icon + name
+                VStack(spacing: 12) {
+                    Image(systemName: "waveform.circle.fill")
+                        .font(.system(size: 64))
+                        .foregroundStyle(SpongeTheme.coral)
 
-                Text("Sponge")
-                    .font(.title.weight(.bold))
+                    Text("Sponge")
+                        .font(.title.weight(.bold))
 
-                Text(appVersion)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            }
+                    Text(appVersion)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
 
-            // Actions
-            VStack(spacing: 10) {
-                if let updater = updaterController {
-                    Button {
-                        updater.checkForUpdates(nil)
-                    } label: {
-                        Label("Check for Updates", systemImage: "arrow.triangle.2.circlepath")
+                // About description
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Sponge was built for students who want to focus on learning, not note-taking. It records your lectures, transcribes them in real time using on-device speech recognition, and then uses AI to generate organized study notes, summaries, and recall prompts — so you can absorb more and stress less.")
+                        .font(.body)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.horizontal, 24)
+
+                Divider()
+                    .padding(.horizontal, 40)
+
+                // Credits
+                VStack(spacing: 6) {
+                    Text("Created by Daniel Wait")
+                        .font(.subheadline.weight(.medium))
+                    Text("Licensed under the MIT License")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text("\u{00A9} 2025-2026 Daniel Wait Works LLC")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
+                // Actions
+                VStack(spacing: 10) {
+                    if let updater = updaterController {
+                        Button {
+                            updater.checkForUpdates(nil)
+                        } label: {
+                            Label("Check for Updates", systemImage: "arrow.triangle.2.circlepath")
+                                .frame(maxWidth: 220)
+                        }
+                        .buttonStyle(PrimaryButtonStyle(color: SpongeTheme.coral))
+                    }
+
+                    Link(destination: URL(string: "https://github.com/danielwaitworksllc/classrecordingmacapp")!) {
+                        Label("View on GitHub", systemImage: "link")
                             .frame(maxWidth: 220)
                     }
-                    .buttonStyle(PrimaryButtonStyle(color: SpongeTheme.coral))
+                    .buttonStyle(.bordered)
+                    .controlSize(.regular)
                 }
 
-                Link(destination: URL(string: "https://github.com/danielwaitworksllc/classrecordingmacapp")!) {
-                    Label("View on GitHub", systemImage: "link")
-                        .frame(maxWidth: 220)
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.regular)
+                Spacer(minLength: 16)
             }
-
-            Spacer()
+            .frame(maxWidth: .infinity)
         }
-        .frame(maxWidth: .infinity)
     }
 }
 

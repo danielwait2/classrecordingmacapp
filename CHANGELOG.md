@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-03-12 (v2.2)
+Improved About page with app description, creator credit, MIT license, and copyright. Release script now auto-updates version numbers in Xcode project.
+
+## 2026-03-12 (v2.1)
+Fixed Sparkle OTA updates: removed app-level XPC services (must only live inside Sparkle.framework for non-sandboxed apps), added --deep codesign flag for Updater.app universal binary, and updated release script.
+
 ## 2026-03-12 (v1.4)
 Major notes editor upgrade: added strikethrough, underline, highlight, checklist, block quote, horizontal rule, indent/outdent, and auto-save indicator. Full-screen recording view is now default when recording starts; collapsible recordings list. Removed meeting mode. AI features tour shown on first recording open. Unified cream background throughout.
 

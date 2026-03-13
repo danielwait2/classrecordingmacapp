@@ -64,6 +64,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		8A4A3E5C2F63582200C6F60F /* Downloader.xpc */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.xpc-service"; name = Downloader.xpc; path = "../../Library/Developer/Xcode/DerivedData/Sponge-abyqkaxkuzaomxcgonignswyrnps/SourcePackages/artifacts/sparkle/Sparkle/Sparkle.xcframework/macos-arm64_x86_64/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc"; sourceTree = "<group>"; };
+		8A4A3E5D2F63582300C6F60F /* Installer.xpc */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.xpc-service"; name = Installer.xpc; path = "../../Library/Developer/Xcode/DerivedData/Sponge-abyqkaxkuzaomxcgonignswyrnps/SourcePackages/artifacts/sparkle/Sparkle/Sparkle.xcframework/macos-arm64_x86_64/Sparkle.framework/Versions/B/XPCServices/Installer.xpc"; sourceTree = "<group>"; };
 		8A5048D62F33E39500EE01EC /* SharedAudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedAudioManager.swift; sourceTree = "<group>"; };
 		A1000002207A0001 /* SpongeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpongeApp.swift; sourceTree = "<group>"; };
 		A1000004207A0001 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -131,7 +133,6 @@
 		};
 /* End PBXFrameworksBuildPhase section */
 
-
 /* Begin PBXGroup section */
 		8A4756DE2F634441000A240A /* Frameworks */ = {
 			isa = PBXGroup;
@@ -143,6 +144,8 @@
 		A1000021207A0001 = {
 			isa = PBXGroup;
 			children = (
+				8A4A3E5C2F63582200C6F60F /* Downloader.xpc */,
+				8A4A3E5D2F63582300C6F60F /* Installer.xpc */,
 				A1000022207A0001 /* Sponge */,
 				E1000007207E0001 /* SpongeUITests */,
 				8A4756DE2F634441000A240A /* Frameworks */,
@@ -550,7 +553,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Sponge/Sponge.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 21;
 				DEVELOPMENT_TEAM = G8TSWK949Z;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
@@ -565,7 +568,7 @@
 					"@loader_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 2.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.ClassTranscriber;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -583,7 +586,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Sponge/Sponge.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 21;
 				DEVELOPMENT_TEAM = G8TSWK949Z;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
@@ -598,7 +601,7 @@
 					"@loader_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 2.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.ClassTranscriber;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -695,11 +698,6 @@
 
 /* Begin XCSwiftPackageProductDependency section */
 		8A2B3B8C2F6340AC004A4971 /* Sparkle */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 8A2B3B8B2F6340AC004A4971 /* XCRemoteSwiftPackageReference "Sparkle" */;
-			productName = Sparkle;
-		};
-		8A4756DF2F634441000A240A /* Sparkle */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 8A2B3B8B2F6340AC004A4971 /* XCRemoteSwiftPackageReference "Sparkle" */;
 			productName = Sparkle;
