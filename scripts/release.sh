@@ -117,13 +117,17 @@ See [CHANGELOG.md](https://github.com/danielwaitworksllc/sponge/blob/main/CHANGE
 ---
 
 ## Install (first time)
+
+> **Important:** Do not open the app until you've completed all steps below.
+
 1. Download **Sponge-v${VERSION}.zip** above
-2. Double-click to unzip → you'll get **Sponge.app**
-3. Open Terminal (⌘ Space → type Terminal → Enter) and run:
+2. Double-click the zip to unzip it — you'll get **Sponge.app**
+3. Open Terminal (⌘ Space → type \`Terminal\` → Enter) and run:
 \`\`\`
 xattr -cr ~/Downloads/Sponge.app
 \`\`\`
-4. Double-click **Sponge.app** to launch — the app walks you through setup on first run
+4. Drag **Sponge.app** to your **Applications** folder
+5. Open Sponge from Applications — the app walks you through setup on first run
 
 ## Already installed?
 No action needed — the app updates itself automatically.

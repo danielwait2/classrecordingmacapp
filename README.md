@@ -13,6 +13,8 @@ Record your lectures, get real-time transcripts, and generate AI-powered study n
 
 ## Install (No Xcode needed)
 
+> **Important:** Do not open the app until you've completed all steps below.
+
 ### 1. Download
 Go to the [Releases page](https://github.com/danielwaitworksllc/sponge/releases/latest) and download the latest **Sponge-vX.X.zip**.
 
@@ -28,8 +30,11 @@ xattr -cr ~/Downloads/Sponge.app
 
 > **Where's Terminal?** Press `⌘ Space`, type `Terminal`, hit Enter. Then paste the line above and press Enter.
 
-### 4. Open the app
-Double-click **Sponge.app**. The app will walk you through the rest on first launch.
+### 4. Move to Applications
+Drag **Sponge.app** to your **Applications** folder.
+
+### 5. Open the app
+Open Sponge from Applications. The app will walk you through the rest on first launch.
 
 ### Updating
 After first install, Sponge updates itself automatically — no action needed.
