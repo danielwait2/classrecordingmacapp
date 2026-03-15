@@ -374,6 +374,17 @@ private struct AboutTab: View {
                     .buttonStyle(.bordered)
                     .controlSize(.regular)
 
+                    ShareLink(
+                        item: URL(string: "https://github.com/danielwaitworksllc/sponge/releases/latest")!,
+                        subject: Text("Sponge — Lecture Recording & AI Notes"),
+                        message: Text("Check out Sponge — it records lectures, transcribes them in real time, and generates AI study notes. Free for Mac!")
+                    ) {
+                        Label("Share Sponge", systemImage: "square.and.arrow.up")
+                            .frame(maxWidth: 220)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.regular)
+
                     Link(destination: {
                         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
                         let subject = "Sponge Feedback (v\(version))"
