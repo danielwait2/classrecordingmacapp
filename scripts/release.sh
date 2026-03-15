@@ -120,7 +120,7 @@ See [CHANGELOG.md](https://github.com/danielwaitworksllc/sponge/blob/main/CHANGE
 
 > **Important:** Do not open the app until you've completed all steps below.
 
-1. Download **Sponge-v${VERSION}.zip** above
+1. Download **Sponge-v${VERSION}.zip** from the Assets section below
 2. Double-click the zip to unzip it — you'll get **Sponge.app**
 3. Open Terminal (⌘ Space → type \`Terminal\` → Enter) and run:
 \`\`\`
