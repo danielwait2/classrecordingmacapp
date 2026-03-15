@@ -366,8 +366,22 @@ private struct AboutTab: View {
                         .buttonStyle(PrimaryButtonStyle(color: SpongeTheme.coral))
                     }
 
-                    Link(destination: URL(string: "https://github.com/danielwaitworksllc/classrecordingmacapp")!) {
+                    Link(destination: URL(string: "https://github.com/danielwaitworksllc/sponge")!) {
                         Label("View on GitHub", systemImage: "link")
+                            .frame(maxWidth: 220)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.regular)
+
+                    Link(destination: {
+                        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
+                        let subject = "Sponge Feedback"
+                        let body = "Hi Daniel,\n\nI'm using Sponge v\(version) and wanted to reach out.\n\n[Your message here]"
+                        let encoded = "mailto:sponge@waitworks.com?subject=\(subject)&body=\(body)"
+                            .addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+                        return URL(string: encoded)!
+                    }()) {
+                        Label("Contact Support", systemImage: "envelope")
                             .frame(maxWidth: 220)
                     }
                     .buttonStyle(.bordered)

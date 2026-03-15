@@ -68,7 +68,7 @@ fi
 echo "Signature: ${SIGNATURE}"
 
 echo "==> Updating appcast.xml..."
-RELEASE_URL="https://github.com/danielwaitworksllc/classrecordingmacapp/releases/download/${TAG}/${ZIP_NAME}"
+RELEASE_URL="https://github.com/danielwaitworksllc/sponge/releases/download/${TAG}/${ZIP_NAME}"
 TODAY=$(date -u "+%a, %d %b %Y %H:%M:%S +0000")
 BUILD_NUMBER=$(git rev-list --count HEAD)
 
@@ -111,9 +111,28 @@ git push origin "${TAG}"
 echo "==> Creating GitHub release..."
 gh release create "${TAG}" "${ZIP_PATH}" \
     --title "Sponge v${VERSION}" \
-    --notes "See CHANGELOG.md for details."
+    --notes "## What's new
+See [CHANGELOG.md](https://github.com/danielwaitworksllc/sponge/blob/main/CHANGELOG.md) for details.
+
+---
+
+## Install (first time)
+1. Download **Sponge-v${VERSION}.zip** above
+2. Double-click to unzip → you'll get **Sponge.app**
+3. Open Terminal (⌘ Space → type Terminal → Enter) and run:
+\`\`\`
+xattr -cr ~/Downloads/Sponge.app
+\`\`\`
+4. Double-click **Sponge.app** to launch — the app walks you through setup on first run
+
+## Already installed?
+No action needed — the app updates itself automatically.
+
+## Requirements
+- macOS 26 (Tahoe) or later
+- Free Gemini API key for AI notes (optional — the app guides you through it on first launch)"
 
 echo ""
 echo "✓ Released ${TAG}"
-echo "  Appcast: https://danielwaitworksllc.github.io/classrecordingmacapp/appcast.xml"
+echo "  Appcast: https://danielwaitworksllc.github.io/sponge/appcast.xml"
 echo "  Users will be notified automatically on next app launch."

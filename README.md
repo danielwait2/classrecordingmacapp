@@ -14,7 +14,7 @@ Record your lectures, get real-time transcripts, and generate AI-powered study n
 ## Install (No Xcode needed)
 
 ### 1. Download
-Go to the [Releases page](https://github.com/danielwaitworksllc/classrecordingmacapp/releases/latest) and download **Sponge-v1.0.zip**.
+Go to the [Releases page](https://github.com/danielwaitworksllc/sponge/releases/latest) and download the latest **Sponge-vX.X.zip**.
 
 ### 2. Unzip
 Double-click the zip to extract **Sponge.app**.
@@ -30,6 +30,9 @@ xattr -cr ~/Downloads/Sponge.app
 
 ### 4. Open the app
 Double-click **Sponge.app**. The app will walk you through the rest on first launch.
+
+### Updating
+After first install, Sponge updates itself automatically — no action needed.
 
 ---
 
@@ -53,6 +56,3 @@ Sponge's onboarding covers everything:
 
 ---
 
-## Updating
-
-When a new version is released, download the new zip from the [Releases page](https://github.com/danielwaitworksllc/classrecordingmacapp/releases), run `xattr -cr` on it again, and replace the old app.

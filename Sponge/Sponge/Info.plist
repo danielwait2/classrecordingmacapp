@@ -11,7 +11,7 @@
 	<key>NSScreenCaptureUsageDescription</key>
 	<string>Sponge needs Screen Recording permission to capture audio from video calls (Zoom, Teams, Meet) in Meeting mode.</string>
 	<key>SUFeedURL</key>
-	<string>https://danielwaitworksllc.github.io/classrecordingmacapp/appcast.xml</string>
+	<string>https://danielwaitworksllc.github.io/sponge/appcast.xml</string>
 	<key>SUPublicEDKey</key>
 	<string>EZwMeXODvwimxW0wzOF792LXp82tv2txRM1nH685pbU=</string>
 </dict>
