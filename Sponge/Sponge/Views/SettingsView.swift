@@ -401,8 +401,9 @@ private struct AboutTab: View {
                             .foregroundColor(.secondary)
                     }
 
-                    Link(destination: URL(string: "https://github.com/danielwaitworksllc/sponge")!) {
-                        Label("View on GitHub", systemImage: "link")
+                    HStack(spacing: 16) {
+                        Link("GitHub", destination: URL(string: "https://github.com/danielwaitworksllc/sponge")!)
+                        Link("Privacy Policy", destination: URL(string: "https://danielwaitworksllc.github.io/sponge/privacy.html")!)
                     }
                     .font(.caption)
                     .foregroundColor(.secondary)

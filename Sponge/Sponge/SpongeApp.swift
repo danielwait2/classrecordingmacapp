@@ -17,8 +17,7 @@ struct SpongeApp: App {
             userDriverDelegate: nil
         )
 
-        var config = TelemetryDeck.Config(appID: "30F3FE98-DE23-4EB1-8391-34161BBEF509")
-        config.analyticsDisabled = false
+        let config = TelemetryDeck.Config(appID: "30F3FE98-DE23-4EB1-8391-34161BBEF509")
         TelemetryDeck.initialize(config: config)
         TelemetryDeck.signal("appLaunched")
     }

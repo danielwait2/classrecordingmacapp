@@ -1,7 +1,7 @@
 # Changelog
 
-## 2026-03-15
-Renamed GitHub repo to "sponge" and updated all URL references throughout the codebase. Added "Contact Support" button to the About tab that opens a pre-filled email to sponge@waitworks.com. Unified install instructions between README and GitHub release pages.
+## 2026-03-15 (v2.5)
+Added TelemetryDeck anonymous analytics, privacy policy page, redesigned About tab with compact action bar, Share Sponge button, Send Feedback button, and MIT license link. Renamed GitHub repo to "sponge" and unified install instructions across README and release pages.
 
 ## 2026-03-12 (v2.2)
 Improved About page with app description, creator credit, MIT license, and copyright. Release script now auto-updates version numbers in Xcode project.
