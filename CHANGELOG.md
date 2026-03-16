@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026-03-16
+Set TelemetryDeck signals to production mode (disabled testMode) so analytics are no longer marked as debug.
+
 ## 2026-03-15
 UI/UX overhaul: cleaned up design system (consolidated tokens, removed dead code, centralized Color extensions), redesigned RecordingDetailView with clearer tab pills and bottom action bar, swept all views to use theme tokens consistently, added swiftUIColor to IntentMarkerType, deleted backup files.
 
